@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Acycliq Widget – Configuration personnalisée</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      margin: 0;
+      padding: 2rem;
+      background-color: #f9fafb;
+      color: #333;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      margin-bottom: 1rem;
+      color: #0f172a;
+    }
+
+    h2 {
+      font-size: 1.2rem;
+      margin-top: 2rem;
+      margin-bottom: 0.5rem;
+      color: #1e293b;
+    }
+
+    .section {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    label {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      font-size: 0.9rem;
+      color: #334155;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="color"],
+    select {
+      padding: 0.5rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 0.5rem;
+      background: white;
+      font-size: 0.95rem;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    select {
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+      background: white url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23333' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 0.75rem center;
+      background-size: 0.75rem;
+    }
+
+    input[type="color"] {
+      -webkit-appearance: none;
+      appearance: none;
+      border: none;
+      padding: 0;
+      width: 2.5rem;
+      height: 2.5rem;
+      cursor: pointer;
+    }
+    input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+    input[type="color"]::-webkit-color-swatch { border: none; border-radius: 0.5rem; }
+
+    input:focus,
+    select:focus {
+      border-color: #2563eb;
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+    }
+
+    button {
+      display: block;
+      width: 100%;
+      padding: 0.75rem;
+      background-color: #2563eb;
+      color: white;
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      margin-top: 1rem;
+    }
+
+    button:hover { background-color: #1d4ed8; }
+
+    .button-group {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .button-group button {
+      width: auto;
+      display: inline-block;
+    }
+
+    #copy-btn {
+      padding: 0.5rem;
+      font-size: 1rem;
+      width: auto;
+    }
+
+    .config-widget-container {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    @media (min-width: 768px) {
+      .config-widget-container {
+        flex-direction: row;
+      }
+      .config-widget-container form {
+        width: 40%;
+        flex-shrink: 0;
+      }
+      .config-widget-container .widget-preview {
+        flex: 1;
+        min-width: 0;
+      }
+    }
+
+    .widget-preview {
+      border: 2px solid #e2e8f0;
+      border-radius: 0.75rem;
+      background: white;
+      min-height: 400px;
+    }
+
+    .hidden { display: none !important; }
+
+    .code-block {
+      background: #1e293b;
+      color: #e2e8f0;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 0.85rem;
+      overflow-x: auto;
+      white-space: pre;
+      margin-top: 1rem;
+      position: relative;
+    }
+
+    .code-block button {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      padding: 0.3rem 0.6rem;
+      font-size: 0.8rem;
+      background: #475569;
+      margin: 0;
+      width: auto;
+    }
+
+    .code-block button:hover { background: #64748b; }
+  </style>
+</head>
+<body>
+  <h1>Configurer Acycliq Widget</h1>
+
+  <div class="config-widget-container">
+  <form id="config-form">
+    <h2>Type de widget</h2>
+    <div class="section">
+      <label>
+        Widget
+        <select name="widgetType" id="widget-type">
+          <option value="hydro">Hydrométrie</option>
+          <option value="pluvio">Pluviométrie</option>
+        </select>
+      </label>
+    </div>
+
+    <h2>Connexion API</h2>
+    <div class="section">
+      <label>
+        URL de l'API
+        <input type="text" name="apiUrl" value="https://smmar.acycliq.fr/api" />
+      </label>
+      <label>
+        Token
+        <input type="text" name="token" placeholder="Votre token Bearer" />
+      </label>
+    </div>
+
+    <h2>Station</h2>
+    <div class="section">
+      <label>
+        ID Station
+        <input type="number" name="idStation" min="1" value="17" />
+      </label>
+      <label id="data-type-section">
+        Type de données
+        <select name="dataType">
+          <option value="4">Hauteur (m)</option>
+          <option value="5">Débit (m³/s)</option>
+        </select>
+      </label>
+    </div>
+
+    <h2>Affichage</h2>
+    <div class="section">
+      <label>
+        Couleur
+        <input type="color" name="color" value="#007BFF" />
+      </label>
+      <label>
+        Fenêtre initiale (heures)
+        <input type="number" name="hours" min="1" max="720" value="3" />
+      </label>
+      <label>
+        Rafraîchissement (minutes)
+        <input type="number" name="refresh" min="1" max="60" value="5" />
+      </label>
+    </div>
+
+    <div class="section" id="hydro-options">
+      <label>
+        Conversion NGF
+        <select name="ngf">
+          <option value="true">Oui</option>
+          <option value="false">Non</option>
+        </select>
+      </label>
+      <label>
+        Afficher les seuils
+        <select name="threshold">
+          <option value="true">Oui</option>
+          <option value="false">Non</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="section hidden" id="pluvio-options">
+      <label>
+        Courbe cumulative
+        <select name="cumul">
+          <option value="true">Oui</option>
+          <option value="false">Non</option>
+        </select>
+      </label>
+    </div>
+
+    <h2>Dimensions iframe</h2>
+    <div class="section">
+      <label>
+        Largeur
+        <input type="text" name="width" value="100%" />
+      </label>
+      <label>
+        Hauteur
+        <input type="text" name="height" value="500" />
+      </label>
+    </div>
+
+    <h2>Plage temporelle (optionnel)</h2>
+    <div class="section">
+      <label>
+        Date de début
+        <input type="text" name="startDate" placeholder="ex: 2026-03-01" />
+      </label>
+      <label>
+        Date de fin
+        <input type="text" name="endDate" placeholder="ex: 2026-03-13" />
+      </label>
+    </div>
+
+    <div class="button-group">
+      <button type="submit">Appliquer</button>
+      <button type="button" id="copy-btn" title="Copier la configuration JSON">📋</button>
+    </div>
+  </form>
+
+  <div class="widget-preview">
+    <div id="acycliq-widget"></div>
+  </div>
+  </div>
+
+  <div id="code-output"></div>
+
+  <script src="../dist/embed/acycliq-widget.min.js"></script>
+  <script>
+    const form = document.getElementById('config-form');
+    const widgetType = document.getElementById('widget-type');
+    const hydroOptions = document.getElementById('hydro-options');
+    const pluvioOptions = document.getElementById('pluvio-options');
+    const dataTypeSection = document.getElementById('data-type-section');
+    const widgetContainer = document.getElementById('acycliq-widget');
+    const codeOutput = document.getElementById('code-output');
+
+    function toggleOptions() {
+      const isHydro = widgetType.value === 'hydro';
+      hydroOptions.classList.toggle('hidden', !isHydro);
+      dataTypeSection.classList.toggle('hidden', !isHydro);
+      pluvioOptions.classList.toggle('hidden', isHydro);
+    }
+
+    widgetType.addEventListener('change', toggleOptions);
+    toggleOptions();
+
+    function getConfig(data) {
+      const type = data.get('widgetType');
+      const config = {
+        apiUrl: data.get('apiUrl'),
+        token: data.get('token'),
+        container: '#acycliq-widget',
+        idStation: parseInt(data.get('idStation'), 10),
+        color: data.get('color'),
+        hours: parseInt(data.get('hours'), 10),
+        refresh: parseInt(data.get('refresh'), 10),
+        width: data.get('width'),
+        height: data.get('height')
+      };
+
+      var startDate = (data.get('startDate') || '').trim();
+      var endDate = (data.get('endDate') || '').trim();
+      if (startDate) config.startDate = startDate;
+      if (endDate) config.endDate = endDate;
+
+      if (type === 'hydro') {
+        config.dataType = parseInt(data.get('dataType'), 10);
+        config.ngf = data.get('ngf') === 'true';
+        config.threshold = data.get('threshold') === 'true';
+      } else {
+        config.cumul = data.get('cumul') === 'true';
+      }
+
+      return { type: type, config: config };
+    }
+
+    function generateCodeSnippet(type, config) {
+      var embedConfig = Object.assign({}, config);
+      delete embedConfig.width;
+      delete embedConfig.height;
+
+      if (embedConfig.color === '#007BFF') delete embedConfig.color;
+      if (embedConfig.hours === 3) delete embedConfig.hours;
+      if (embedConfig.refresh === 5) delete embedConfig.refresh;
+      if (type === 'hydro') {
+        if (embedConfig.dataType === 4) delete embedConfig.dataType;
+        if (embedConfig.ngf === true) delete embedConfig.ngf;
+        if (embedConfig.threshold === true) delete embedConfig.threshold;
+      }
+      if (type === 'pluvio' && embedConfig.cumul === true) delete embedConfig.cumul;
+
+      var configStr = JSON.stringify(embedConfig, null, '    ');
+      var width = config.width || '100%';
+      var height = config.height || '500';
+
+      return '<div id="acycliq-widget" style="width: ' + width + '; height: ' + height + 'px;"></div>\n\n' +
+        '<script src="https://unpkg.com/acycliq-widget@latest/dist/embed/acycliq-widget.min.js"><\/script>\n' +
+        '<script>\n  acycliq.' + type + '(' + configStr + ')\n<\/script>';
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function renderWidget() {
+      var data = new FormData(form);
+      var result = getConfig(data);
+      var type = result.type;
+      var config = result.config;
+
+      if (!config.token) {
+        widgetContainer.innerHTML = '<p style="padding:1rem; color:#900;">Veuillez renseigner un token API.</p>';
+        return;
+      }
+
+      widgetContainer.innerHTML = '';
+      acycliq[type](config);
+
+      var snippet = generateCodeSnippet(type, config);
+      codeOutput.innerHTML =
+        '<h2>Code d\'intégration</h2>' +
+        '<div class="code-block"><button type="button" id="copy-code-btn">Copier</button>' + escapeHtml(snippet) + '</div>';
+
+      document.getElementById('copy-code-btn').addEventListener('click', function() {
+        navigator.clipboard.writeText(snippet)
+          .then(function() { alert('Code d\'intégration copié !'); })
+          .catch(function(err) { console.error('Erreur:', err); });
+      });
+    }
+
+    document.getElementById('copy-btn').addEventListener('click', function() {
+      var data = new FormData(form);
+      var result = getConfig(data);
+      var jsonConfig = JSON.stringify(result.config, null, 2);
+      navigator.clipboard.writeText(jsonConfig)
+        .then(function() { alert('Configuration JSON copiée !'); })
+        .catch(function(err) { console.error('Erreur:', err); });
+    });
+
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      renderWidget();
+    });
+  </script>
+</body>
+</html>
