@@ -1,0 +1,50 @@
+{
+  "name": "acycliq-widget",
+  "description": "Widget graphique pour la visualisation des données hydrométriques et pluviométriques de l'API Acycliq.",
+  "version": "0.1.0",
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "browser": "dist/embed/acycliq-widget.min.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/smmareptb11/acycliq"
+  },
+  "keywords": [
+    "widget",
+    "hydrométrie",
+    "pluviométrie",
+    "API",
+    "Acycliq",
+    "SMMAR"
+  ],
+  "license": "AGPL-3.0",
+  "author": "Théophile Merlière <theophile@livingdata.co>",
+  "scripts": {
+    "dev": "vite",
+    "build:iframe": "vite build --config vite.iframe.config.js",
+    "build:embed": "vite build --config vite.embed.config.js",
+    "build": "npm run build:iframe && npm run build:embed",
+    "preview": "vite preview",
+    "lint": "eslint . --ext .js,.jsx",
+    "lint:fix": "eslint . --ext .js,.jsx --fix",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "preact": "^10.26.2",
+    "uplot": "^1.6.31"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.24.0",
+    "@preact/preset-vite": "^2.10.1",
+    "eslint": "^9.24.0",
+    "eslint-plugin-preact": "^0.1.0",
+    "eslint-plugin-react": "^7.37.5",
+    "globals": "^16.0.0",
+    "rollup-plugin-terser": "^7.0.2",
+    "vite": "^6.2.0",
+    "vitest": "^3.1.1"
+  },
+  "packageManager": "yarn@1.22.22+sha1.ac34549e6aa8e7ead463a7407e1c7390f61a6610"
+}
