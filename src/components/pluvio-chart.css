@@ -1,5 +1,6 @@
 .acycliq-pluvio {
 	width: 100%;
+	min-width: 0;
 	font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
 }
 

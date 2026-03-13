@@ -6,6 +6,23 @@ const DEFAULT_CHART_HEIGHT = 300
 const DEFAULT_RANGER_HEIGHT = 28
 const RANGER_OFFSET = 100
 
+/**
+ * Measure the available width of a container without being inflated
+ * by its uPlot child canvas. Temporarily collapses the uPlot root
+ * so offsetWidth reflects the parent constraint, not the canvas.
+ */
+function measureWidth(containerEl) {
+	const uWrap = containerEl.querySelector('.uplot')
+	if (uWrap) {
+		const prev = uWrap.style.width
+		uWrap.style.width = '0'
+		const w = containerEl.offsetWidth
+		uWrap.style.width = prev
+		return w || 400
+	}
+	return containerEl.offsetWidth || 400
+}
+
 export function useDateRange(startDate, endDate) {
 	const startMs = useMemo(() => {
 		if (startDate) return new Date(startDate).getTime()
@@ -71,7 +88,7 @@ export function useChart({ plotData, hours, color, buildChartOpts, formatTooltip
 		if (uPlotRef.current) { uPlotRef.current.destroy(); uPlotRef.current = null }
 		if (uRangerRef.current) { uRangerRef.current.destroy(); uRangerRef.current = null }
 
-		const chartWidth = chartRef.current.offsetWidth || 400
+		const chartWidth = measureWidth(chartRef.current)
 
 		// Build chart-specific options, then merge shared config
 		const specificOpts = buildOptsRef.current(chartWidth, initMin, initMax)
@@ -214,7 +231,7 @@ export function useChart({ plotData, hours, color, buildChartOpts, formatTooltip
 		// Resize handler
 		const handleResize = () => {
 			if (!chartRef.current) return
-			const w = chartRef.current.offsetWidth || 400
+			const w = measureWidth(chartRef.current)
 			uPlotRef.current?.setSize({ width: w, height: DEFAULT_CHART_HEIGHT })
 			uRangerRef.current?.setSize({ width: w - RANGER_OFFSET, height: DEFAULT_RANGER_HEIGHT })
 		}
