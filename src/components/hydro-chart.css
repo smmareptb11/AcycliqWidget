@@ -1,0 +1,85 @@
+.acycliq-hydro {
+	width: 100%;
+	font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+}
+
+.acycliq-header {
+	padding: 0.25rem 0;
+}
+
+.last-value {
+	font-size: 1.1rem;
+	font-weight: bold;
+	color: #333;
+}
+
+.last-date {
+	font-size: 0.85rem;
+	font-weight: normal;
+	color: #666;
+}
+
+.chart-wrapper {
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+}
+
+.chart-ranger {
+	margin: 0 75px;
+}
+
+.chart-ranger .u-select {
+	pointer-events: all;
+	cursor: grabbing;
+}
+
+.chart-ranger .u-grip-l,
+.chart-ranger .u-grip-r {
+	position: absolute;
+	top: 0;
+	width: 10px;
+	height: 100%;
+	background: rgba(255, 255, 255, 0.7);
+	border: 1px solid #666;
+	cursor: ew-resize;
+}
+
+.chart-ranger .u-grip-l { left: -5px; }
+.chart-ranger .u-grip-r { right: -5px; }
+
+.acycliq-tooltip {
+	display: none;
+	position: fixed;
+	z-index: 9999;
+	background: rgba(0, 0, 0, 0.75);
+	color: #fff;
+	padding: 6px 10px;
+	border-radius: 4px;
+	font-size: 12px;
+	pointer-events: none;
+}
+
+.acycliq-tooltip .date {
+	margin-bottom: 0.25rem;
+}
+
+.acycliq-tooltip .value {
+	font-weight: bold;
+	white-space: nowrap;
+}
+
+.acycliq-loading,
+.acycliq-error,
+.acycliq-empty {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	height: 200px;
+	font-family: system-ui, sans-serif;
+	color: #666;
+}
+
+.acycliq-error {
+	color: #c00;
+}

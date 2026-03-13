@@ -1,0 +1,35 @@
+.acycliq-pluvio {
+	width: 100%;
+	font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+}
+
+.pluvio-legend {
+	display: flex;
+	gap: 1.5rem;
+	margin-top: 0.5rem;
+	justify-content: center;
+	flex-wrap: wrap;
+}
+
+.pluvio-legend-item {
+	display: inline-flex;
+	align-items: center;
+	font-size: 0.875rem;
+}
+
+.pluvio-legend-bar {
+	display: inline-block;
+	width: 14px;
+	height: 14px;
+	margin-right: 6px;
+	opacity: 0.5;
+	border-radius: 2px;
+}
+
+.pluvio-legend-line {
+	display: inline-block;
+	width: 25px;
+	height: 2px;
+	margin-right: 6px;
+	background-color: #FF6B00;
+}
