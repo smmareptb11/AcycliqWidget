@@ -4,7 +4,7 @@ import 'uplot/dist/uPlot.min.css'
 import { fullDateTimeFormatter } from '../lib/util/date.js'
 import { formaterNombreFr } from '../lib/util/number.js'
 import { fetchHydroStation, fetchHydroMeasures, fetchHydroThresholds } from '../lib/api.js'
-import { toNgf } from '../lib/ngf.js'
+import { buildHydroPlotData } from '../lib/data-transform.js'
 import { useChart, useDateRange, useAutoRefresh, xAxisConfig } from '../lib/hooks/use-chart.js'
 import ChartControls from './chart-controls.jsx'
 import Legend from './legend.jsx'
@@ -54,23 +54,10 @@ const HydroChart = ({ config }) => {
 		? (applyNgf ? 'Hauteur (m NGF)' : 'Hauteur (m)')
 		: 'Débit (m³/s)'
 
-	const plotData = useMemo(() => {
-		if (!state.measures || !Array.isArray(state.measures)) return null
-
-		const sorted = [...state.measures].sort((a, b) => a[0] - b[0])
-		const xVals = sorted.map(d => d[0] / 1000)
-		const yVals = sorted.map(d => {
-			const val = d[1]
-			if (val == null) return null
-			return applyNgf ? toNgf(val, altitude) : Number(val.toFixed(3))
-		})
-
-		const thresholdArrays = (state.thresholds || []).map(th =>
-			Array(xVals.length).fill(th.value)
-		)
-
-		return [xVals, yVals, ...thresholdArrays]
-	}, [state.measures, state.stationInfo, state.thresholds, useNgf, isHeight])
+	const plotData = useMemo(
+		() => buildHydroPlotData(state.measures, altitude, useNgf, isHeight, state.thresholds),
+		[state.measures, state.stationInfo, state.thresholds, useNgf, isHeight]
+	)
 
 	const thresholdsSeries = useMemo(() =>
 		(state.thresholds || []).map(th => ({

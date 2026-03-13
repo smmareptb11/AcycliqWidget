@@ -4,6 +4,7 @@ import 'uplot/dist/uPlot.min.css'
 import { fullDateTimeFormatter } from '../lib/util/date.js'
 import { formaterNombreFr } from '../lib/util/number.js'
 import { fetchPluvioMeasures } from '../lib/api.js'
+import { buildPluvioPlotData } from '../lib/data-transform.js'
 import { useChart, useDateRange, useAutoRefresh, xAxisConfig } from '../lib/hooks/use-chart.js'
 import ChartControls from './chart-controls.jsx'
 import './pluvio-chart.css'
@@ -37,27 +38,10 @@ const PluvioChart = ({ config }) => {
 
 	useAutoRefresh(loadData, refresh)
 
-	const plotData = useMemo(() => {
-		if (!state.measures || !Array.isArray(state.measures)) return null
-
-		const sorted = [...state.measures].sort((a, b) => a[0] - b[0])
-		const xVals = sorted.map(d => d[0] / 1000)
-		const yVals = sorted.map(d => {
-			const val = d[1]
-			return val != null && Number.isFinite(val) ? Number(val.toFixed(2)) : null
-		})
-
-		if (cumul) {
-			let acc = 0
-			const cumulVals = yVals.map(v => {
-				if (v != null) acc += v
-				return Number(acc.toFixed(2))
-			})
-			return [xVals, yVals, cumulVals]
-		}
-
-		return [xVals, yVals]
-	}, [state.measures, cumul])
+	const plotData = useMemo(
+		() => buildPluvioPlotData(state.measures, cumul),
+		[state.measures, cumul]
+	)
 
 	const { chartRef, rangerRef, activeHours, handleZoom, handleExportPNG } = useChart({
 		plotData,
