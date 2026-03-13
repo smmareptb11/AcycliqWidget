@@ -1,6 +1,9 @@
 import { defineConfig } from 'vite'
-import { resolve } from 'path'
+import { resolve, dirname } from 'path'
+import { fileURLToPath } from 'url'
 import { terser } from 'rollup-plugin-terser'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
 	build: {

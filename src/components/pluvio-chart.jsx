@@ -31,7 +31,8 @@ const PluvioChart = ({ config }) => {
 			})
 
 			setState({ loading: false, error: null, measures })
-		} catch (err) {
+		}
+		catch (err) {
 			setState(s => ({ ...s, loading: false, error: err.message }))
 		}
 	}, [apiUrl, token, idStation, startMs, endMs])

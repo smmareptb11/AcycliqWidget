@@ -1,5 +1,4 @@
 import { useCallback, useState, useMemo } from 'preact/hooks'
-import UPlot from 'uplot'
 import 'uplot/dist/uPlot.min.css'
 import { fullDateTimeFormatter } from '../lib/util/date.js'
 import { formaterNombreFr } from '../lib/util/number.js'
@@ -40,7 +39,8 @@ const HydroChart = ({ config }) => {
 
 			const filteredThresholds = (thresholds || []).filter(th => String(th.dataType) === String(dataType))
 			setState({ loading: false, error: null, measures, thresholds: filteredThresholds, stationInfo })
-		} catch (err) {
+		}
+		catch (err) {
 			setState(s => ({ ...s, loading: false, error: err.message }))
 		}
 	}, [apiUrl, token, idStation, dataType, showThresholds, startMs, endMs])

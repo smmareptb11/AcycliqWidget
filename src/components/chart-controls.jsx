@@ -10,31 +10,29 @@ const ZOOM_LEVELS = [
 	{ label: 'Tout', hours: null }
 ]
 
-const ChartControls = ({ activeHours, onZoom, onExportPNG }) => {
-	return (
-		<div className="chart-controls">
-			<div className="zoom-buttons">
-				{ZOOM_LEVELS.map(level => (
-					<button
-						key={level.label}
-						type="button"
-						className={`zoom-btn${level.hours === activeHours ? ' active' : ''}`}
-						onClick={() => onZoom(level.hours)}
-					>
-						{level.label}
-					</button>
-				))}
-			</div>
-			<button
-				type="button"
-				className="export-btn"
-				title="Exporter en PNG"
-				onClick={onExportPNG}
-			>
-				PNG
-			</button>
+const ChartControls = ({ activeHours, onZoom, onExportPNG }) => (
+	<div className="chart-controls">
+		<div className="zoom-buttons">
+			{ZOOM_LEVELS.map(level => (
+				<button
+					key={level.label}
+					type="button"
+					className={`zoom-btn${level.hours === activeHours ? ' active' : ''}`}
+					onClick={() => onZoom(level.hours)}
+				>
+					{level.label}
+				</button>
+			))}
 		</div>
-	)
-}
+		<button
+			type="button"
+			className="export-btn"
+			title="Exporter en PNG"
+			onClick={onExportPNG}
+		>
+				PNG
+		</button>
+	</div>
+)
 
 export default ChartControls
