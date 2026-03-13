@@ -1,0 +1,35 @@
+.dev-title {
+	font-family: system-ui, sans-serif;
+	text-align: center;
+	margin: 1rem 0;
+	font-size: 1.2rem;
+	color: #333;
+}
+
+.dev-grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 1.5rem;
+	padding: 1rem;
+	max-width: 1600px;
+	margin: 0 auto;
+}
+
+.dev-card {
+	border: 1px solid #ddd;
+	border-radius: 8px;
+	padding: 1rem;
+	background: #fff;
+}
+
+.dev-card h2 {
+	margin: 0 0 0.5rem;
+	font-family: system-ui, sans-serif;
+	font-size: 0.95rem;
+}
+
+@media (max-width: 768px) {
+	.dev-grid {
+		grid-template-columns: 1fr;
+	}
+}

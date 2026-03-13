@@ -22,7 +22,8 @@ function renderWidget(config) {
 			return
 		}
 		render(<PluvioChart config={applyPluvioDefaults(config)} />, app)
-	} else {
+	}
+	else {
 		const result = validateHydroConfig(config)
 		if (!result.valid) {
 			render(
@@ -39,36 +40,9 @@ function renderWidget(config) {
 }
 
 if (isDev) {
-	const apiUrl = import.meta.env.VITE_ACYCLIQ_API_URL
-	const token = import.meta.env.VITE_ACYCLIQ_TOKEN
-
-	if (!apiUrl || !token) {
-		render(
-			<div style="padding:2rem; font-family:system-ui, sans-serif; color:#900;">
-				<h2>Configuration manquante</h2>
-				<p>Créez un fichier <code>.env</code> à la racine du projet avec :</p>
-				<pre style="background:#f5f5f5; padding:1rem; border-radius:4px; color:#333;">{`VITE_ACYCLIQ_TOKEN=votre_token_ici
-VITE_ACYCLIQ_API_URL=https://smmar.acycliq.fr/api`}</pre>
-				<p>Puis relancez <code>yarn dev</code>.</p>
-			</div>,
-			document.getElementById('app')
-		)
-	} else {
-		render(
-			<div style="display: flex; flex-direction: column; gap: 2rem; padding: 1rem;">
-				<div>
-					<h2 style="margin: 0 0 0.5rem; font-family: system-ui, sans-serif;">Hydro — Station 17</h2>
-					<HydroChart config={applyHydroDefaults({ apiUrl, token, idStation: 17, container: '#app' })} />
-				</div>
-				<div>
-					<h2 style="margin: 0 0 0.5rem; font-family: system-ui, sans-serif;">Pluvio — Station 719</h2>
-					<PluvioChart config={applyPluvioDefaults({ apiUrl, token, idStation: 719, container: '#app' })} />
-				</div>
-			</div>,
-			document.getElementById('app')
-		)
-	}
-} else {
+	import('./dev.jsx')
+}
+else {
 	window.addEventListener('message', (event) => {
 		const { type, ...config } = event.data || {}
 		if (type === 'hydro' || type === 'pluvio') {
