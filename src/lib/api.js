@@ -1,13 +1,20 @@
 const headers = (token) => ({
-	'Authorization': `Bearer ${token}`,
+	Authorization: `Bearer ${token}`,
 	'Content-Type': 'application/json'
 })
+
+async function handleResponse(res, context) {
+	if (!res.ok) {
+		throw new Error(`${context} (HTTP ${res.status})`)
+	}
+	return res.json()
+}
 
 export async function fetchHydroStation(apiUrl, token, stationId) {
 	const res = await fetch(`${apiUrl}/hydrologicalStation/${stationId}`, {
 		headers: headers(token)
 	})
-	return res.json()
+	return handleResponse(res, `Station hydrométrique ${stationId} introuvable`)
 }
 
 export async function fetchHydroMeasures(apiUrl, token, params) {
@@ -16,14 +23,14 @@ export async function fetchHydroMeasures(apiUrl, token, params) {
 		headers: headers(token),
 		body: JSON.stringify(params)
 	})
-	return res.json()
+	return handleResponse(res, `Impossible de récupérer les mesures de la station ${params.stationId}`)
 }
 
 export async function fetchHydroThresholds(apiUrl, token, stationId) {
 	const res = await fetch(`${apiUrl}/hydrologicalStation/${stationId}/threshold`, {
 		headers: headers(token)
 	})
-	return res.json()
+	return handleResponse(res, `Impossible de récupérer les seuils de la station ${stationId}`)
 }
 
 export async function fetchPluvioMeasures(apiUrl, token, params) {
@@ -32,5 +39,5 @@ export async function fetchPluvioMeasures(apiUrl, token, params) {
 		headers: headers(token),
 		body: JSON.stringify(params)
 	})
-	return res.json()
+	return handleResponse(res, `Impossible de récupérer les mesures pluvio de la station ${params.stationId}`)
 }
