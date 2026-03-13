@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Acycliq Widget — Multi-instances</title>
+	<style>
+		body { font-family: system-ui, sans-serif; padding: 1rem; }
+		.widget { width: 100%; height: 450px; margin-bottom: 2rem; }
+		h2 { margin: 0 0 0.5rem; }
+	</style>
+</head>
+<body>
+	<h2>Hydro — Station 17</h2>
+	<div id="hydro1" class="widget"></div>
+
+	<h2>Pluvio — Station 719</h2>
+	<div id="pluvio1" class="widget"></div>
+
+	<script src="../dist/embed/acycliq-widget.min.js"></script>
+	<script>
+		const API_URL = 'https://smmar.acycliq.fr/api'
+		const TOKEN = 'VOTRE_TOKEN_ICI'
+
+		acycliq.hydro({
+			apiUrl: API_URL,
+			token: TOKEN,
+			container: '#hydro1',
+			idStation: 17
+		})
+
+		acycliq.pluvio({
+			apiUrl: API_URL,
+			token: TOKEN,
+			container: '#pluvio1',
+			idStation: 719
+		})
+	</script>
+</body>
+</html>
