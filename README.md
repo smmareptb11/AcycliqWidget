@@ -29,6 +29,12 @@ yarn install
 yarn dev
 ```
 
+## Tests
+
+```bash
+yarn test
+```
+
 ## Documentation
 
 Voir [docs/integration.md](docs/integration.md) pour le guide d'intégration complet.
