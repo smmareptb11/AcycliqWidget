@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { validatePluvioConfig, applyPluvioDefaults } from '../../src/lib/config.js'
-import { buildPluvioPlotData } from '../../src/lib/data-transform.js'
+import { buildPluvioPlotData, computeWindowedCumul } from '../../src/lib/data-transform.js'
 
 // Mesures pluvio réalistes : 13 mars 2026, 1 mesure par heure, 06:00–11:00 UTC
 const measuresResponse = [
@@ -30,12 +30,11 @@ describe('pluvio pipeline: config → transform → données uPlot', () => {
 		expect(config.cumul).toBe(true)
 	})
 
-	it('produit des données uPlot avec cumul à partir de la réponse API', () => {
-		const config = applyPluvioDefaults(userConfig)
-		const plotData = buildPluvioPlotData(measuresResponse, config.cumul)
+	it('produit des données uPlot [x, y] à partir de la réponse API', () => {
+		const plotData = buildPluvioPlotData(measuresResponse)
 
 		expect(plotData).not.toBeNull()
-		expect(plotData.length).toBe(3) // x, y, cumul
+		expect(plotData.length).toBe(2)
 
 		// X en secondes Unix
 		expect(plotData[0][0]).toBe(1773568800)
@@ -43,22 +42,20 @@ describe('pluvio pipeline: config → transform → données uPlot', () => {
 
 		// Y arrondis à 2 décimales, null préservé
 		expect(plotData[1]).toEqual([0.2, 1.4, 0.0, null, 3.8, 0.6])
-
-		// Cumul : le null ne casse pas l'accumulateur
-		expect(plotData[2][0]).toBe(0.2)
-		expect(plotData[2][1]).toBe(1.6)   // 0.2 + 1.4
-		expect(plotData[2][2]).toBe(1.6)   // + 0.0
-		expect(plotData[2][3]).toBe(1.6)   // null → accumulateur inchangé
-		expect(plotData[2][4]).toBe(5.4)   // + 3.8
-		expect(plotData[2][5]).toBe(6.0)   // + 0.6
 	})
 
-	it('sans cumul, retourne uniquement x et y', () => {
-		const plotData = buildPluvioPlotData(measuresResponse, false)
+	it('le cumul est calculé sur la fenêtre visible et redémarre à 0 à chaque zoom', () => {
+		const [xVals, yVals] = buildPluvioPlotData(measuresResponse)
 
-		expect(plotData.length).toBe(2)
-		expect(plotData[0].length).toBe(6)
-		expect(plotData[1].length).toBe(6)
+		// Fenêtre complète : comportement équivalent à l'ancien cumul global
+		const full = computeWindowedCumul(xVals, yVals, xVals[0], xVals[xVals.length - 1])
+		expect(full.cumul).toEqual([0.2, 1.6, 1.6, 1.6, 5.4, 6.0])
+
+		// Fenêtre restreinte aux mesures 08:00 → 10:00 : le cumul redémarre à 0
+		// sur la mesure 08:00 (0.0), null conservé, puis +3.8.
+		const zoomed = computeWindowedCumul(xVals, yVals, 1773576000, 1773583200)
+		expect(zoomed.cumul).toEqual([null, null, 0.0, 0.0, 3.8, null])
+		expect(zoomed.max).toBe(3.8)
 	})
 
 	it('données capteur aberrantes (Infinity/NaN) sont remplacées par null', () => {
@@ -69,13 +66,19 @@ describe('pluvio pipeline: config → transform → données uPlot', () => {
 			[1773579600000, 1.2]
 		]
 
-		const plotData = buildPluvioPlotData(mesuresBruitees, true)
+		const plotData = buildPluvioPlotData(mesuresBruitees)
 
 		expect(plotData[1]).toEqual([0.5, null, null, 1.2])
-		// Le cumul ignore les null
-		expect(plotData[2][0]).toBe(0.5)
-		expect(plotData[2][1]).toBe(0.5)  // Infinity → null → pas d'ajout
-		expect(plotData[2][2]).toBe(0.5)  // NaN → null → pas d'ajout
-		expect(plotData[2][3]).toBe(1.7)  // + 1.2
+
+		const { cumul } = computeWindowedCumul(
+			plotData[0],
+			plotData[1],
+			plotData[0][0],
+			plotData[0][plotData[0].length - 1]
+		)
+		expect(cumul[0]).toBe(0.5)
+		expect(cumul[1]).toBe(0.5)  // Infinity → null → pas d'ajout
+		expect(cumul[2]).toBe(0.5)  // NaN → null → pas d'ajout
+		expect(cumul[3]).toBe(1.7)  // + 1.2
 	})
 })

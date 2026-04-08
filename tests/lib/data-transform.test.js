@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildHydroPlotData, buildPluvioPlotData } from '../../src/lib/data-transform.js'
+import { buildHydroPlotData, buildPluvioPlotData, computeWindowedCumul } from '../../src/lib/data-transform.js'
 
 // Timestamps réalistes : mesures hydro du 13 mars 2026, toutes les 5 minutes
 const t1 = 1773568800000 // 2026-03-13T06:00:00Z
@@ -87,71 +87,100 @@ describe('buildPluvioPlotData', () => {
 	]
 
 	it('sorts measures chronologically and converts ms timestamps to seconds', () => {
-		const result = buildPluvioPlotData(measures, false)
+		const result = buildPluvioPlotData(measures)
 		expect(result[0]).toEqual([t1 / 1000, t2 / 1000, t3 / 1000])
 	})
 
 	it('rounds y-values to 2 decimals', () => {
-		const result = buildPluvioPlotData(measures, false)
+		const result = buildPluvioPlotData(measures)
 		expect(result[1]).toEqual([1.23, 0.79, 2.46])
 	})
 
-	it('returns [xVals, yVals] without cumul', () => {
-		const result = buildPluvioPlotData(measures, false)
+	it('returns [xVals, yVals] only (cumul is computed later per visible window)', () => {
+		const result = buildPluvioPlotData(measures)
 		expect(result.length).toBe(2)
-	})
-
-	it('returns [xVals, yVals, cumulVals] with cumul', () => {
-		const result = buildPluvioPlotData(measures, true)
-		expect(result.length).toBe(3)
-	})
-
-	it('computes cumulative sum correctly', () => {
-		const result = buildPluvioPlotData(measures, true)
-		// sorted: 1.23, 0.79, 2.46
-		expect(result[2][0]).toBeCloseTo(1.23, 2)
-		expect(result[2][1]).toBeCloseTo(2.02, 2)
-		expect(result[2][2]).toBeCloseTo(4.48, 2)
-	})
-
-	it('handles null values in cumul (skips them, keeps accumulator)', () => {
-		const data = [[t1, 1.0], [t2, null], [t3, 2.0]]
-		const result = buildPluvioPlotData(data, true)
-		expect(result[1]).toEqual([1.0, null, 2.0])
-		expect(result[2]).toEqual([1.0, 1.0, 3.0])
 	})
 
 	it('handles Infinity values', () => {
 		const data = [[t1, Infinity], [t2, 1.0]]
-		const result = buildPluvioPlotData(data, false)
+		const result = buildPluvioPlotData(data)
 		expect(result[1][0]).toBeNull()
 		expect(result[1][1]).toBe(1.0)
 	})
 
 	it('handles NaN values', () => {
 		const data = [[t1, NaN], [t2, 1.0]]
-		const result = buildPluvioPlotData(data, false)
+		const result = buildPluvioPlotData(data)
 		expect(result[1][0]).toBeNull()
 		expect(result[1][1]).toBe(1.0)
 	})
 
 	it('returns null for null measures', () => {
-		expect(buildPluvioPlotData(null, false)).toBeNull()
+		expect(buildPluvioPlotData(null)).toBeNull()
 	})
 
 	it('returns null for non-array measures', () => {
-		expect(buildPluvioPlotData({}, false)).toBeNull()
+		expect(buildPluvioPlotData({})).toBeNull()
 	})
 
 	it('returns empty arrays for empty measures', () => {
-		const result = buildPluvioPlotData([], false)
+		const result = buildPluvioPlotData([])
 		expect(result[0]).toEqual([])
 		expect(result[1]).toEqual([])
 	})
+})
 
-	it('avoids floating point drift in cumul', () => {
-		const data = [[t1, 0.1], [t2, 0.2], [t3, 0.3]]
-		const result = buildPluvioPlotData(data, true)
-		expect(result[2][2]).toBe(0.6)
+describe('computeWindowedCumul', () => {
+	const xVals = [100, 200, 300, 400, 500]
+
+	it('accumulates only values inside [minX, maxX]', () => {
+		const yVals = [1, 2, 3, 4, 5]
+		const { cumul, max } = computeWindowedCumul(xVals, yVals, 200, 400)
+		expect(cumul).toEqual([null, 2, 5, 9, null])
+		expect(max).toBe(9)
+	})
+
+	it('resets accumulator to 0 at the first visible point', () => {
+		const yVals = [10, 1, 2, 3, 20]
+		const { cumul } = computeWindowedCumul(xVals, yVals, 200, 400)
+		// First visible value is 1, not continuing from 10.
+		expect(cumul[1]).toBe(1)
+		expect(cumul[2]).toBe(3)
+		expect(cumul[3]).toBe(6)
+	})
+
+	it('returns all-null when window contains no points', () => {
+		const yVals = [1, 2, 3, 4, 5]
+		const { cumul, max } = computeWindowedCumul(xVals, yVals, 600, 700)
+		expect(cumul).toEqual([null, null, null, null, null])
+		expect(max).toBe(0)
+	})
+
+	it('includes boundary points (inclusive range)', () => {
+		const yVals = [1, 2, 3, 4, 5]
+		const { cumul } = computeWindowedCumul(xVals, yVals, 100, 500)
+		expect(cumul).toEqual([1, 3, 6, 10, 15])
+	})
+
+	it('skips null values without breaking the accumulator', () => {
+		const yVals = [null, 1.0, null, 2.0, null]
+		const { cumul } = computeWindowedCumul(xVals, yVals, 100, 500)
+		expect(cumul[0]).toBe(0)
+		expect(cumul[1]).toBe(1)
+		expect(cumul[2]).toBe(1)
+		expect(cumul[3]).toBe(3)
+		expect(cumul[4]).toBe(3)
+	})
+
+	it('rounds accumulated values to 2 decimals (no float drift)', () => {
+		const yVals = [0.1, 0.2, 0.3, 0, 0]
+		const { cumul } = computeWindowedCumul(xVals, yVals, 100, 500)
+		expect(cumul[2]).toBe(0.6)
+	})
+
+	it('handles an empty dataset', () => {
+		const { cumul, max } = computeWindowedCumul([], [], 0, 1000)
+		expect(cumul).toEqual([])
+		expect(max).toBe(0)
 	})
 })

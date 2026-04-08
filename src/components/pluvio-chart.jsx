@@ -4,19 +4,52 @@ import 'uplot/dist/uPlot.min.css'
 import { fullDateTimeFormatter } from '../lib/util/date.js'
 import { formaterNombreFr } from '../lib/util/number.js'
 import { fetchPluvioMeasures } from '../lib/api.js'
-import { buildPluvioPlotData } from '../lib/data-transform.js'
+import { buildPluvioPlotData, computeWindowedCumul } from '../lib/data-transform.js'
 import { useChart, useDateRange, useAutoRefresh, xAxisConfig } from '../lib/hooks/use-chart.js'
 import ChartControls from './chart-controls.jsx'
 import './pluvio-chart.css'
 
 const barSize = UPlot.paths.bars({ size: [0.8], align: 1 })
 
+/**
+ * Range function for uPlot scales that should always start at 0 and never
+ * collapse when the visible window contains no data. Used as the `range`
+ * config on both the rainfall (`y`) and cumul scales so that uPlot honors
+ * our explicit `setScale(min, max)` calls instead of auto-overriding them.
+ */
+const nonNegativeAutoRange = (_u, dataMin, dataMax) => {
+	if (dataMin == null || !Number.isFinite(dataMax)) return [0, 1]
+	return [0, Math.max(dataMax, 1)]
+}
+
+/** Recompute the rainfall (bars) y scale to fit values in the visible window. */
+function recomputeYScale(u, minX, maxX) {
+	const xVals = u.data[0]
+	const yVals = u.data[1]
+	let yMax = 0
+	for (let i = 0; i < xVals.length; i++) {
+		if (xVals[i] < minX || xVals[i] > maxX) continue
+		const v = yVals[i]
+		if (v != null && v > yMax) yMax = v
+	}
+	u.setScale('y', { min: 0, max: yMax > 0 ? yMax * 1.1 : 1 })
+}
+
+/** Recompute the windowed cumul series and update its scale to match. */
+function recomputeCumulScale(u, minX, maxX) {
+	const xVals = u.data[0]
+	const yVals = u.data[1]
+	const { cumul: newCumul, max: cMax } = computeWindowedCumul(xVals, yVals, minX, maxX)
+	u.setData([xVals, yVals, newCumul], false)
+	u.setScale('cumul', { min: 0, max: cMax > 0 ? cMax : 1 })
+}
+
 const PluvioChart = ({ config }) => {
 	const [state, setState] = useState({ loading: true, error: null, measures: null })
 
 	const { apiUrl, token, idStation, color = '#007BFF', hours = 3, cumul = true, refresh = 5, startDate, endDate } = config
 
-	const { startMs, endMs } = useDateRange(startDate, endDate)
+	const { startMs, getEndMs } = useDateRange(startDate, endDate)
 
 	const loadData = useCallback(async () => {
 		try {
@@ -26,7 +59,7 @@ const PluvioChart = ({ config }) => {
 				groupFunc: 'all',
 				chartMode: true,
 				startDate: startMs,
-				endDate: endMs,
+				endDate: getEndMs(),
 				distinctByCodePoint: true
 			})
 
@@ -35,14 +68,26 @@ const PluvioChart = ({ config }) => {
 		catch (err) {
 			setState(s => ({ ...s, loading: false, error: err.message }))
 		}
-	}, [apiUrl, token, idStation, startMs, endMs])
+	}, [apiUrl, token, idStation, startMs, getEndMs])
 
 	useAutoRefresh(loadData, refresh)
 
-	const plotData = useMemo(
-		() => buildPluvioPlotData(state.measures, cumul),
-		[state.measures, cumul]
-	)
+	const plotData = useMemo(() => {
+		const base = buildPluvioPlotData(state.measures)
+		if (!base) return null
+		if (!cumul) return base
+		// Placeholder for the cumul series; filled dynamically by onScaleChange
+		// based on the currently visible x-range.
+		return [base[0], base[1], new Array(base[0].length).fill(null)]
+	}, [state.measures, cumul])
+
+	const handleScaleChange = useCallback((u, minX, maxX) => {
+		// Both scales must be re-derived from the visible window: uPlot's
+		// auto-ranging would otherwise leave them stuck on values inherited
+		// from a previous (wider) zoom.
+		recomputeYScale(u, minX, maxX)
+		if (cumul) recomputeCumulScale(u, minX, maxX)
+	}, [cumul])
 
 	const { chartRef, rangerRef, activeHours, handleZoom, handleExportPNG } = useChart({
 		plotData,
@@ -73,7 +118,9 @@ const PluvioChart = ({ config }) => {
 
 			const scales = {
 				x: { time: true, min: initMin, max: initMax },
-				y: { auto: true, dir: -1 }
+				// `range` makes uPlot honor explicit setScale calls from
+				// handleScaleChange (auto:true would override them).
+				y: { dir: -1, range: nonNegativeAutoRange }
 			}
 
 			if (cumul) {
@@ -94,7 +141,9 @@ const PluvioChart = ({ config }) => {
 					grid: { show: false }
 				})
 
-				scales.cumul = { auto: true }
+				// Same `range` strategy as the y scale: needed so that
+				// recomputeCumulScale's explicit setScale calls stick.
+				scales.cumul = { range: nonNegativeAutoRange }
 			}
 
 			return { width: chartWidth, height: 300, scales, axes, series }
@@ -118,7 +167,8 @@ const PluvioChart = ({ config }) => {
 
 			return html
 		},
-		exportPrefix: `pluvio-${idStation}`
+		exportPrefix: `pluvio-${idStation}`,
+		onScaleChange: handleScaleChange
 	})
 
 	if (state.loading) {

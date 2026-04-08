@@ -32,12 +32,14 @@ export function useDateRange(startDate, endDate) {
 		return d.getTime()
 	}, [startDate])
 
-	const endMs = useMemo(() => {
+	const fixedEndMs = useMemo(() => {
 		if (endDate) return new Date(endDate).getTime()
-		return Date.now()
+		return null
 	}, [endDate])
 
-	return { startMs, endMs }
+	const getEndMs = useCallback(() => fixedEndMs ?? Date.now(), [fixedEndMs])
+
+	return { startMs, getEndMs }
 }
 
 export function useAutoRefresh(loadData, refreshMinutes) {
@@ -61,8 +63,9 @@ export function useAutoRefresh(loadData, refreshMinutes) {
  * @param {Function} opts.formatTooltip - (uPlot, idx) => HTML string or null
  * @param {string} opts.exportPrefix - filename prefix for PNG export
  * @param {Function} [opts.onChartReady] - called with uPlot instance after creation
+ * @param {Function} [opts.onScaleChange] - (u, min, max) called whenever x-scale changes (init, zoom, ranger drag)
  */
-export function useChart({ plotData, hours, color, buildChartOpts, formatTooltip, exportPrefix, onChartReady }) {
+export function useChart({ plotData, hours, color, buildChartOpts, formatTooltip, exportPrefix, onChartReady, onScaleChange }) {
 	const chartRef = useRef(null)
 	const rangerRef = useRef(null)
 	const uPlotRef = useRef(null)
@@ -75,6 +78,9 @@ export function useChart({ plotData, hours, color, buildChartOpts, formatTooltip
 	formatTooltipRef.current = formatTooltip
 	const onChartReadyRef = useRef(onChartReady)
 	onChartReadyRef.current = onChartReady
+	const onScaleChangeRef = useRef(onScaleChange)
+	onScaleChangeRef.current = onScaleChange
+	const reentryGuardRef = useRef(false)
 
 	useEffect(() => {
 		if (!chartRef.current || !rangerRef.current || !plotData || !plotData[0].length) return
@@ -106,6 +112,28 @@ export function useChart({ plotData, hours, color, buildChartOpts, formatTooltip
 						u.over._tooltip = tooltip
 						u.over.addEventListener('mouseenter', () => { tooltip.style.display = 'block' })
 						u.over.addEventListener('mouseleave', () => { tooltip.style.display = 'none' })
+					}
+				],
+				setScale: [
+					(u, key) => {
+						if (key !== 'x') return
+						if (reentryGuardRef.current) return
+						if (!onScaleChangeRef.current) return
+						// Defer: uPlot may not yet have committed the new scale
+						// when this hook fires, and any nested setScale/setData
+						// calls would race against the outer scale update.
+						// queueMicrotask runs after the current setScale completes.
+						const cb = onScaleChangeRef.current
+						queueMicrotask(() => {
+							if (reentryGuardRef.current) return
+							reentryGuardRef.current = true
+							try {
+								cb(u, u.scales.x.min, u.scales.x.max)
+							}
+							finally {
+								reentryGuardRef.current = false
+							}
+						})
 					}
 				],
 				setCursor: [

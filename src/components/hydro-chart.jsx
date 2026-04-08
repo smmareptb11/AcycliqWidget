@@ -18,7 +18,7 @@ const HydroChart = ({ config }) => {
 	const isHeight = dataType === 4
 	const unit = isHeight ? 'm' : 'm³/s'
 
-	const { startMs, endMs } = useDateRange(startDate, endDate)
+	const { startMs, getEndMs } = useDateRange(startDate, endDate)
 
 	const loadData = useCallback(async () => {
 		try {
@@ -30,7 +30,7 @@ const HydroChart = ({ config }) => {
 					groupFunc: 'ALL',
 					chartMode: true,
 					startDate: startMs,
-					endDate: endMs
+					endDate: getEndMs()
 				}),
 				showThresholds
 					? fetchHydroThresholds(apiUrl, token, idStation)
@@ -43,7 +43,7 @@ const HydroChart = ({ config }) => {
 		catch (err) {
 			setState(s => ({ ...s, loading: false, error: err.message }))
 		}
-	}, [apiUrl, token, idStation, dataType, showThresholds, startMs, endMs])
+	}, [apiUrl, token, idStation, dataType, showThresholds, startMs, getEndMs])
 
 	useAutoRefresh(loadData, refresh)
 

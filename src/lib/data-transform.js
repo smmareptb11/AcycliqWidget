@@ -20,7 +20,7 @@ export function buildHydroPlotData(measures, altitude, useNgf, isHeight, thresho
 	return [xVals, yVals, ...thresholdArrays]
 }
 
-export function buildPluvioPlotData(measures, cumul) {
+export function buildPluvioPlotData(measures) {
 	if (!measures || !Array.isArray(measures)) return null
 
 	const sorted = [...measures].sort((a, b) => a[0] - b[0])
@@ -30,14 +30,39 @@ export function buildPluvioPlotData(measures, cumul) {
 		return val != null && Number.isFinite(val) ? Number(val.toFixed(2)) : null
 	})
 
-	if (cumul) {
-		let acc = 0
-		const cumulVals = yVals.map(v => {
-			if (v != null) acc += v
-			return Number(acc.toFixed(2))
-		})
-		return [xVals, yVals, cumulVals]
-	}
-
 	return [xVals, yVals]
+}
+
+/**
+ * Compute the rainfall cumulative sum restricted to a visible window.
+ *
+ * Behaviour:
+ * - Points outside [minX, maxX] (inclusive bounds) get `null`.
+ * - Points inside the window accumulate from 0, restarting at the first
+ *   visible point (so each new zoom shows a fresh cumul curve).
+ * - `null` values inside the window are kept as-is on the cumul output
+ *   (the accumulator carries over) — except when the very first visible
+ *   point is itself null: in that case the cumul starts at 0, because
+ *   « 0 mm of rain accumulated so far » is the meaningful answer.
+ * - Values are rounded to 2 decimals to avoid float drift.
+ *
+ * @param {number[]} xVals - x timestamps in seconds (sorted ascending)
+ * @param {Array<number|null>} yVals - rainfall values (same length as xVals)
+ * @param {number} minX - visible window start (seconds, inclusive)
+ * @param {number} maxX - visible window end (seconds, inclusive)
+ * @returns {{ cumul: Array<number|null>, max: number }}
+ */
+export function computeWindowedCumul(xVals, yVals, minX, maxX) {
+	const cumul = new Array(xVals.length).fill(null)
+	let acc = 0
+	let max = 0
+	for (let i = 0; i < xVals.length; i++) {
+		const x = xVals[i]
+		if (x < minX || x > maxX) continue
+		const v = yVals[i]
+		if (v != null) acc += v
+		cumul[i] = Number(acc.toFixed(2))
+		if (acc > max) max = acc
+	}
+	return { cumul, max }
 }
