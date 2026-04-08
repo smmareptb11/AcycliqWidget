@@ -1,4 +1,4 @@
-import { useCallback, useState, useMemo } from 'preact/hooks'
+import { useCallback, useEffect, useState, useMemo } from 'preact/hooks'
 import 'uplot/dist/uPlot.min.css'
 import { fullDateTimeFormatter } from '../lib/util/date.js'
 import { formaterNombreFr } from '../lib/util/number.js'
@@ -20,32 +20,52 @@ const HydroChart = ({ config }) => {
 
 	const { startMs, getEndMs } = useDateRange(startDate, endDate)
 
-	const loadData = useCallback(async () => {
-		try {
-			const [stationInfo, measures, thresholds] = await Promise.all([
-				fetchHydroStation(apiUrl, token, idStation),
-				fetchHydroMeasures(apiUrl, token, {
-					stationId: idStation,
-					dataType,
-					groupFunc: 'ALL',
-					chartMode: true,
-					startDate: startMs,
-					endDate: getEndMs()
-				}),
-				showThresholds
-					? fetchHydroThresholds(apiUrl, token, idStation)
-					: Promise.resolve([])
-			])
+	// Station metadata and thresholds are quasi-immutable and are fetched
+	// exactly once per (station, dataType, showThresholds) combination —
+	// never on the auto-refresh interval. This cuts the refresh traffic
+	// from 3 calls down to 1 (measures only).
+	useEffect(() => {
+		let cancelled = false
+		async function loadMeta() {
+			try {
+				const [stationInfo, thresholds] = await Promise.all([
+					fetchHydroStation(apiUrl, token, idStation),
+					showThresholds
+						? fetchHydroThresholds(apiUrl, token, idStation)
+						: Promise.resolve([])
+				])
+				if (cancelled) return
+				const filteredThresholds = (thresholds || []).filter(th => String(th.dataType) === String(dataType))
+				setState(s => ({ ...s, error: null, stationInfo, thresholds: filteredThresholds }))
+			}
+			catch (err) {
+				if (cancelled) return
+				setState(s => ({ ...s, loading: false, error: err.message }))
+			}
+		}
+		loadMeta()
+		return () => { cancelled = true }
+	}, [apiUrl, token, idStation, dataType, showThresholds])
 
-			const filteredThresholds = (thresholds || []).filter(th => String(th.dataType) === String(dataType))
-			setState({ loading: false, error: null, measures, thresholds: filteredThresholds, stationInfo })
+	// Measures are the only piece rebuilt on the refresh interval.
+	const loadMeasures = useCallback(async () => {
+		try {
+			const measures = await fetchHydroMeasures(apiUrl, token, {
+				stationId: idStation,
+				dataType,
+				groupFunc: 'ALL',
+				chartMode: true,
+				startDate: startMs,
+				endDate: getEndMs()
+			})
+			setState(s => ({ ...s, loading: false, error: null, measures }))
 		}
 		catch (err) {
 			setState(s => ({ ...s, loading: false, error: err.message }))
 		}
-	}, [apiUrl, token, idStation, dataType, showThresholds, startMs, getEndMs])
+	}, [apiUrl, token, idStation, dataType, startMs, getEndMs])
 
-	useAutoRefresh(loadData, refresh)
+	useAutoRefresh(loadMeasures, refresh)
 
 	const altSystems = state.stationInfo?.link_altimetrySystems || []
 	const altitude = altSystems.length > 0 ? altSystems[0].altitude || 0 : 0
