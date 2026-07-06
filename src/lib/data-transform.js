@@ -20,6 +20,23 @@ export function buildHydroPlotData(measures, altitude, useNgf, isHeight, thresho
 	return [xVals, yVals, ...thresholdArrays]
 }
 
+/**
+ * Offset threshold values by the station altitude when NGF is active, so the
+ * seuil lines and their displayed values line up with the (also-offset) height
+ * curve. When NGF does not apply, values pass through unchanged.
+ *
+ * @param {Array<{value: number}>} thresholds - raw thresholds from the API
+ * @param {number} altitude - station altitude (m)
+ * @param {boolean} applyNgf - whether NGF conversion is active
+ * @returns {Array<object>} thresholds with `value` adjusted (other fields kept)
+ */
+export function applyThresholdsNgf(thresholds, altitude, applyNgf) {
+	return (thresholds || []).map(th => ({
+		...th,
+		value: applyNgf ? toNgf(th.value, altitude) : th.value
+	}))
+}
+
 export function buildPluvioPlotData(measures) {
 	if (!measures || !Array.isArray(measures)) return null
 

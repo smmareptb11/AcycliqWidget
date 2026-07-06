@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildHydroPlotData, buildPluvioPlotData, computeWindowedCumul } from '../../src/lib/data-transform.js'
+import { buildHydroPlotData, buildPluvioPlotData, computeWindowedCumul, applyThresholdsNgf } from '../../src/lib/data-transform.js'
 
 // Timestamps réalistes : mesures hydro du 13 mars 2026, toutes les 5 minutes
 const t1 = 1773568800000 // 2026-03-13T06:00:00Z
@@ -127,6 +127,41 @@ describe('buildPluvioPlotData', () => {
 		const result = buildPluvioPlotData([])
 		expect(result[0]).toEqual([])
 		expect(result[1]).toEqual([])
+	})
+})
+
+describe('applyThresholdsNgf', () => {
+	const thresholds = [
+		{ name: 'Vigilance', value: 2.5, htmlColor: '#FFCC00' },
+		{ name: 'Alerte', value: 3.8, htmlColor: '#FF8800' }
+	]
+
+	it('offsets threshold values by the altitude when NGF applies', () => {
+		const result = applyThresholdsNgf(thresholds, 42.35, true)
+		expect(result[0].value).toBeCloseTo(44.85, 3)
+		expect(result[1].value).toBeCloseTo(46.15, 3)
+	})
+
+	it('preserves the other threshold fields', () => {
+		const result = applyThresholdsNgf(thresholds, 42.35, true)
+		expect(result[0].name).toBe('Vigilance')
+		expect(result[0].htmlColor).toBe('#FFCC00')
+	})
+
+	it('leaves values untouched when NGF does not apply', () => {
+		const result = applyThresholdsNgf(thresholds, 42.35, false)
+		expect(result.map(t => t.value)).toEqual([2.5, 3.8])
+	})
+
+	it('returns a new array (does not mutate the input)', () => {
+		const result = applyThresholdsNgf(thresholds, 42.35, true)
+		expect(result).not.toBe(thresholds)
+		expect(thresholds[0].value).toBe(2.5)
+	})
+
+	it('handles null/undefined thresholds', () => {
+		expect(applyThresholdsNgf(null, 42.35, true)).toEqual([])
+		expect(applyThresholdsNgf(undefined, 42.35, true)).toEqual([])
 	})
 })
 

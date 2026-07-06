@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { validateHydroConfig, applyHydroDefaults } from '../../src/lib/config.js'
-import { buildHydroPlotData } from '../../src/lib/data-transform.js'
+import { buildHydroPlotData, applyThresholdsNgf } from '../../src/lib/data-transform.js'
 
 // Simule une réponse API réaliste : station hydro avec altitude NGF et seuils de vigilance
 const stationResponse = {
@@ -72,6 +72,27 @@ describe('hydro pipeline: config → transform → données uPlot', () => {
 		expect(plotData.length).toBe(4)
 		expect(plotData[2]).toEqual([2.5, 2.5, 2.5, 2.5, 2.5])
 		expect(plotData[3]).toEqual([3.8, 3.8, 3.8, 3.8, 3.8])
+	})
+
+	it('applique l\'altitude NGF aux seuils comme à la courbe (ticket #1)', () => {
+		const config = applyHydroDefaults(userConfig)
+		const isHeight = config.dataType === 4
+		const altitude = stationResponse.link_altimetrySystems[0].altitude
+		const applyNgf = config.ngf && isHeight && altitude > 0
+
+		// Utilise la vraie fonction de production (celle du composant) : une
+		// régression de l'offset des seuils ferait échouer ce test.
+		const filteredThresholds = applyThresholdsNgf(
+			thresholdsResponse.filter(th => String(th.dataType) === String(config.dataType)),
+			altitude,
+			applyNgf
+		)
+
+		const plotData = buildHydroPlotData(measuresResponse, altitude, config.ngf, isHeight, filteredThresholds)
+
+		// 2.5 + 42.35 et 3.8 + 42.35 : les lignes de seuil suivent la courbe NGF
+		expect(plotData[2][0]).toBeCloseTo(44.85, 3)
+		expect(plotData[3][0]).toBeCloseTo(46.15, 3)
 	})
 
 	it('sans NGF, les valeurs brutes sont préservées', () => {

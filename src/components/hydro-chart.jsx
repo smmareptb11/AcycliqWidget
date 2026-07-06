@@ -3,7 +3,7 @@ import 'uplot/dist/uPlot.min.css'
 import { fullDateTimeFormatter } from '../lib/util/date.js'
 import { formaterNombreFr } from '../lib/util/number.js'
 import { fetchHydroStation, fetchHydroMeasures, fetchHydroThresholds } from '../lib/api.js'
-import { buildHydroPlotData } from '../lib/data-transform.js'
+import { buildHydroPlotData, applyThresholdsNgf } from '../lib/data-transform.js'
 import { useChart, useDateRange, useAutoRefresh, xAxisConfig } from '../lib/hooks/use-chart.js'
 import ChartControls from './chart-controls.jsx'
 import Legend from './legend.jsx'
@@ -73,23 +73,33 @@ const HydroChart = ({ config }) => {
 	const yLabel = isHeight
 		? (applyNgf ? 'Hauteur (m NGF)' : 'Hauteur (m)')
 		: 'Débit (m³/s)'
+	const thresholdUnit = applyNgf ? 'm NGF' : unit
+
+	// When NGF is active, thresholds must be shifted by the station altitude
+	// just like the measure curve — otherwise the seuil lines and their
+	// displayed values wouldn't line up with the plotted heights. Computed
+	// once here and reused for the plot data, the series and the legend.
+	const displayThresholds = useMemo(
+		() => applyThresholdsNgf(state.thresholds, altitude, applyNgf),
+		[state.thresholds, altitude, applyNgf]
+	)
 
 	const plotData = useMemo(
-		() => buildHydroPlotData(state.measures, altitude, useNgf, isHeight, state.thresholds),
-		[state.measures, state.stationInfo, state.thresholds, useNgf, isHeight]
+		() => buildHydroPlotData(state.measures, altitude, useNgf, isHeight, displayThresholds),
+		[state.measures, altitude, useNgf, isHeight, displayThresholds]
 	)
 
 	const thresholdsSeries = useMemo(() =>
-		(state.thresholds || []).map(th => ({
+		displayThresholds.map(th => ({
 			label: th.name,
 			stroke: th.htmlColor || '#999',
 			width: 2,
 			dash: [8, 4],
-			value: () => `${th.name} (${formaterNombreFr(th.value)} m)`,
+			value: () => `${th.name} (${formaterNombreFr(th.value)} ${thresholdUnit})`,
 			points: { show: false },
 			show: true
 		}))
-	, [state.thresholds])
+	, [displayThresholds, thresholdUnit])
 
 	const { chartRef, rangerRef, uPlotRef, activeHours, handleZoom, handleExportPNG } = useChart({
 		plotData,
@@ -133,7 +143,7 @@ const HydroChart = ({ config }) => {
 		exportPrefix: `hydro-${idStation}`,
 		onChartReady: () => {
 			setSeriesVisibility(new Map(
-				(state.thresholds || []).map(th => [th.name, true])
+				displayThresholds.map(th => [th.name, true])
 			))
 		}
 	})
@@ -190,7 +200,8 @@ const HydroChart = ({ config }) => {
 
 			{showThresholds && (
 				<Legend
-					thresholds={state.thresholds}
+					thresholds={displayThresholds}
+					unit={thresholdUnit}
 					seriesVisibility={seriesVisibility}
 					onToggle={toggleThreshold}
 				/>
