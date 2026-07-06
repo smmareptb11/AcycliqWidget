@@ -47,7 +47,7 @@ function recomputeCumulScale(u, minX, maxX) {
 const PluvioChart = ({ config }) => {
 	const [state, setState] = useState({ loading: true, error: null, measures: null, stationInfo: null })
 
-	const { apiUrl, token, idStation, color = '#007BFF', hours = 3, cumul = true, groupFunc = 'all', refresh = 5, startDate, endDate } = config
+	const { apiUrl, token, idStation, color = '#007BFF', colorCumul = '#FF6B00', hours = 3, cumul = true, groupFunc = 'all', refresh = 5, startDate, endDate } = config
 
 	// SUM_DAY aggregates rainfall per day; the other modes keep the hourly
 	// cadence. The bars label must reflect the chosen aggregation.
@@ -147,7 +147,7 @@ const PluvioChart = ({ config }) => {
 			if (cumul) {
 				series.push({
 					label: 'Cumul pluvio sur l\'intervalle',
-					stroke: '#FF6B00',
+					stroke: colorCumul,
 					width: 2,
 					scale: 'cumul',
 					spanGaps: true,
@@ -224,7 +224,7 @@ const PluvioChart = ({ config }) => {
 				</span>
 				{cumul && (
 					<span className="pluvio-legend-item" role="listitem">
-						<span className="pluvio-legend-line" aria-hidden="true" />
+						<span className="pluvio-legend-line" style={{ backgroundColor: colorCumul }} aria-hidden="true" />
 						<span>Cumul pluvio sur l'intervalle (mm)</span>
 					</span>
 				)}

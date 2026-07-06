@@ -13,6 +13,7 @@ const PLUVIO_DEFAULTS = {
 	width: '100%',
 	height: '100%',
 	color: '#007BFF',
+	colorCumul: '#FF6B00',
 	hours: 3,
 	cumul: true,
 	groupFunc: 'all',
@@ -70,6 +71,10 @@ export function validatePluvioConfig(config) {
 
 	if (config.groupFunc !== undefined && !GROUP_FUNCS.includes(config.groupFunc)) {
 		errors.push(`"groupFunc" doit valoir ${GROUP_FUNCS.map(g => `"${g}"`).join(', ')}.`)
+	}
+
+	if (config.colorCumul !== undefined && typeof config.colorCumul !== 'string') {
+		errors.push('"colorCumul" doit être une chaîne (couleur CSS).')
 	}
 
 	return { valid: errors.length === 0, errors }
