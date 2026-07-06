@@ -28,8 +28,9 @@
 	overflow: hidden;
 }
 
+/* marge = RANGER_OFFSET / 2 (100px dans use-chart.js) pour que le canevas du ranger tienne dans sa boîte */
 .chart-ranger {
-	margin: 0 75px;
+	margin: 0 50px;
 }
 
 /* touch-action: none neutralise le scroll/zoom natif pour laisser passer les Pointer Events du drag */

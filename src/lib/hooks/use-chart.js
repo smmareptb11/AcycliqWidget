@@ -262,16 +262,28 @@ export function useChart({ plotData, hours, color, buildChartOpts, formatTooltip
 
 		uRangerRef.current = new UPlot(rangerOpts, [plotData[0], plotData[1]], rangerRef.current)
 
-		// Resize handler
+		// Reflow to the container width. Also runs when the container is resized
+		// without a window resize (iframe reflow, orientation change, late layout on mobile).
 		const handleResize = () => {
-			if (!chartRef.current) return
+			if (!chartRef.current || !uPlotRef.current) return
 			const w = measureWidth(chartRef.current)
-			uPlotRef.current?.setSize({ width: w, height: DEFAULT_CHART_HEIGHT })
+			if (w <= 0) return
+			uPlotRef.current.setSize({ width: w, height: DEFAULT_CHART_HEIGHT })
 			uRangerRef.current?.setSize({ width: w - RANGER_OFFSET, height: DEFAULT_RANGER_HEIGHT })
+			// Réaligne la fenêtre du ranger sur l'échelle x courante (les positions en px changent avec la largeur)
+			const xScale = uPlotRef.current.scales.x
+			if (uRangerRef.current && xScale?.min != null && xScale?.max != null) {
+				const left = Math.round(uRangerRef.current.valToPos(xScale.min, 'x'))
+				const width = Math.round(uRangerRef.current.valToPos(xScale.max, 'x')) - left
+				uRangerRef.current.setSelect({ left, width, height: uRangerRef.current.bbox.height }, false)
+			}
 		}
 		window.addEventListener('resize', handleResize)
+		const resizeObserver = new ResizeObserver(handleResize)
+		resizeObserver.observe(chartRef.current)
 
 		return () => {
+			resizeObserver.disconnect()
 			uPlotRef.current?.destroy()
 			uPlotRef.current = null
 			uRangerRef.current?.destroy()
