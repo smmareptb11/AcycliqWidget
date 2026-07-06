@@ -28,6 +28,7 @@ describe('pluvio pipeline: config → transform → données uPlot', () => {
 		const config = applyPluvioDefaults(userConfig)
 		expect(config.hours).toBe(3)
 		expect(config.cumul).toBe(true)
+		expect(config.groupFunc).toBe('all')
 	})
 
 	it('produit des données uPlot [x, y] à partir de la réponse API', () => {

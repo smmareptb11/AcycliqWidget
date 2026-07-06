@@ -4,7 +4,7 @@ import 'uplot/dist/uPlot.min.css'
 import { fullDateTimeFormatter } from '../lib/util/date.js'
 import { formaterNombreFr } from '../lib/util/number.js'
 import { fetchPluvioStation, fetchPluvioMeasures } from '../lib/api.js'
-import { buildPluvioPlotData, computeWindowedCumul } from '../lib/data-transform.js'
+import { buildPluvioPlotData, computeWindowedCumul, pluvioBarLabel } from '../lib/data-transform.js'
 import { useChart, useDateRange, useAutoRefresh, xAxisConfig } from '../lib/hooks/use-chart.js'
 import ChartControls from './chart-controls.jsx'
 import './pluvio-chart.css'
@@ -47,7 +47,11 @@ function recomputeCumulScale(u, minX, maxX) {
 const PluvioChart = ({ config }) => {
 	const [state, setState] = useState({ loading: true, error: null, measures: null, stationInfo: null })
 
-	const { apiUrl, token, idStation, color = '#007BFF', hours = 3, cumul = true, refresh = 5, startDate, endDate } = config
+	const { apiUrl, token, idStation, color = '#007BFF', hours = 3, cumul = true, groupFunc = 'all', refresh = 5, startDate, endDate } = config
+
+	// SUM_DAY aggregates rainfall per day; the other modes keep the hourly
+	// cadence. The bars label must reflect the chosen aggregation.
+	const barLabel = pluvioBarLabel(groupFunc)
 
 	const { startMs, getEndMs } = useDateRange(startDate, endDate)
 
@@ -73,7 +77,7 @@ const PluvioChart = ({ config }) => {
 			const measures = await fetchPluvioMeasures(apiUrl, token, {
 				stationId: idStation,
 				dataType: 1,
-				groupFunc: 'all',
+				groupFunc,
 				chartMode: true,
 				startDate: startMs,
 				endDate: getEndMs(),
@@ -85,7 +89,7 @@ const PluvioChart = ({ config }) => {
 		catch (err) {
 			setState(s => ({ ...s, loading: false, error: err.message }))
 		}
-	}, [apiUrl, token, idStation, startMs, getEndMs])
+	}, [apiUrl, token, idStation, groupFunc, startMs, getEndMs])
 
 	useAutoRefresh(loadData, refresh)
 
@@ -117,7 +121,7 @@ const PluvioChart = ({ config }) => {
 					value: (u, raw) => raw ? fullDateTimeFormatter(new Date(raw * 1000)) : '-'
 				},
 				{
-					label: 'Cumul pluvio / 1h',
+					label: barLabel,
 					stroke: color,
 					fill: color + '80',
 					width: 1,
@@ -216,7 +220,7 @@ const PluvioChart = ({ config }) => {
 			<div className="pluvio-legend" role="list" aria-label="Légende pluviométrie">
 				<span className="pluvio-legend-item" role="listitem">
 					<span className="pluvio-legend-bar" style={{ backgroundColor: color }} aria-hidden="true" />
-					<span>Cumul pluvio / 1h (mm)</span>
+					<span>{barLabel} (mm)</span>
 				</span>
 				{cumul && (
 					<span className="pluvio-legend-item" role="listitem">

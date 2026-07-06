@@ -15,8 +15,11 @@ const PLUVIO_DEFAULTS = {
 	color: '#007BFF',
 	hours: 3,
 	cumul: true,
+	groupFunc: 'all',
 	refresh: 5
 }
+
+const GROUP_FUNCS = ['all', 'SUM_HOUR', 'SUM_DAY']
 
 export function validateHydroConfig(config) {
 	const errors = []
@@ -63,6 +66,10 @@ export function validatePluvioConfig(config) {
 
 	if (config.refresh !== undefined && (typeof config.refresh !== 'number' || config.refresh < 1)) {
 		errors.push('"refresh" doit être un nombre positif (en minutes).')
+	}
+
+	if (config.groupFunc !== undefined && !GROUP_FUNCS.includes(config.groupFunc)) {
+		errors.push(`"groupFunc" doit valoir ${GROUP_FUNCS.map(g => `"${g}"`).join(', ')}.`)
 	}
 
 	return { valid: errors.length === 0, errors }

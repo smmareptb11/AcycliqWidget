@@ -37,6 +37,17 @@ export function applyThresholdsNgf(thresholds, altitude, applyNgf) {
 	}))
 }
 
+/**
+ * Label for the rainfall bars series, reflecting the chosen aggregation:
+ * a daily sum (`SUM_DAY`) accumulates over a day, the other modes stay hourly.
+ *
+ * @param {string} groupFunc - 'all' | 'SUM_HOUR' | 'SUM_DAY'
+ * @returns {string}
+ */
+export function pluvioBarLabel(groupFunc) {
+	return groupFunc === 'SUM_DAY' ? 'Cumul pluvio / jour' : 'Cumul pluvio / 1h'
+}
+
 export function buildPluvioPlotData(measures) {
 	if (!measures || !Array.isArray(measures)) return null
 

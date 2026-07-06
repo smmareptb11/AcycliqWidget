@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildHydroPlotData, buildPluvioPlotData, computeWindowedCumul, applyThresholdsNgf } from '../../src/lib/data-transform.js'
+import { buildHydroPlotData, buildPluvioPlotData, computeWindowedCumul, applyThresholdsNgf, pluvioBarLabel } from '../../src/lib/data-transform.js'
 
 // Timestamps réalistes : mesures hydro du 13 mars 2026, toutes les 5 minutes
 const t1 = 1773568800000 // 2026-03-13T06:00:00Z
@@ -162,6 +162,17 @@ describe('applyThresholdsNgf', () => {
 	it('handles null/undefined thresholds', () => {
 		expect(applyThresholdsNgf(null, 42.35, true)).toEqual([])
 		expect(applyThresholdsNgf(undefined, 42.35, true)).toEqual([])
+	})
+})
+
+describe('pluvioBarLabel', () => {
+	it('labels daily aggregation "/ jour"', () => {
+		expect(pluvioBarLabel('SUM_DAY')).toBe('Cumul pluvio / jour')
+	})
+
+	it('labels hourly and raw aggregation "/ 1h"', () => {
+		expect(pluvioBarLabel('SUM_HOUR')).toBe('Cumul pluvio / 1h')
+		expect(pluvioBarLabel('all')).toBe('Cumul pluvio / 1h')
 	})
 })
 
