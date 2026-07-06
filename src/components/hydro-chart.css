@@ -32,6 +32,16 @@
 	margin: 0 75px;
 }
 
+/* touch-action: none neutralise le scroll/zoom natif pour laisser passer les Pointer Events du drag */
+.chart-ranger .u-over,
+.chart-ranger .u-select,
+.chart-ranger .u-grip-l,
+.chart-ranger .u-grip-r {
+	touch-action: none;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
 .chart-ranger .u-select {
 	pointer-events: all;
 	cursor: grabbing;
@@ -50,6 +60,17 @@
 
 .chart-ranger .u-grip-l { left: -5px; }
 .chart-ranger .u-grip-r { right: -5px; }
+
+/* Élargit la cible tactile (~44px) sans changer l'apparence de la barre visible */
+.chart-ranger .u-grip-l::before,
+.chart-ranger .u-grip-r::before {
+	content: '';
+	position: absolute;
+	top: -12px;
+	bottom: -12px;
+	left: -17px;
+	right: -17px;
+}
 
 .acycliq-tooltip {
 	display: none;

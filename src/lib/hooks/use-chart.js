@@ -220,13 +220,19 @@ export function useChart({ plotData, hours, color, buildChartOpts, formatTooltip
 							x0 = e.clientX
 							lft0 = uRanger.select.left
 							wid0 = uRanger.select.width
+							// Pointer Events unifient souris/tactile/stylet ; capture pour fiabiliser le suivi hors de l'élément
+							try { e.target.setPointerCapture(e.pointerId) }
+							catch { /* pointeur déjà relâché */ }
 							const _onMove = debounce(evt => onMove(evt.clientX - x0))
 							const _onUp = () => {
-								off('mousemove', document, _onMove)
-								off('mouseup', document, _onUp)
+								off('pointermove', document, _onMove)
+								off('pointerup', document, _onUp)
+								off('pointercancel', document, _onUp)
 							}
-							on('mousemove', document, _onMove)
-							on('mouseup', document, _onUp)
+							on('pointermove', document, _onMove)
+							on('pointerup', document, _onUp)
+							on('pointercancel', document, _onUp)
+							e.preventDefault()
 							e.stopPropagation()
 						}
 
@@ -238,9 +244,9 @@ export function useChart({ plotData, hours, color, buildChartOpts, formatTooltip
 						gripR.classList.add('u-grip-r')
 						selector.appendChild(gripR)
 
-						on('mousedown', selector, e => bindMove(e, diff => update(lft0 + diff, wid0)))
-						on('mousedown', gripL, e => bindMove(e, diff => update(lft0 + diff, wid0 - diff)))
-						on('mousedown', gripR, e => bindMove(e, diff => update(lft0, wid0 + diff)))
+						on('pointerdown', selector, e => bindMove(e, diff => update(lft0 + diff, wid0)))
+						on('pointerdown', gripL, e => bindMove(e, diff => update(lft0 + diff, wid0 - diff)))
+						on('pointerdown', gripR, e => bindMove(e, diff => update(lft0, wid0 + diff)))
 					}
 				],
 				setSelect: [
