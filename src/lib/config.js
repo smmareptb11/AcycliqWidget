@@ -13,10 +13,14 @@ const PLUVIO_DEFAULTS = {
 	width: '100%',
 	height: '100%',
 	color: '#007BFF',
+	colorCumul: '#FF6B00',
 	hours: 3,
 	cumul: true,
+	groupFunc: 'all',
 	refresh: 5
 }
+
+const GROUP_FUNCS = ['all', 'SUM_HOUR', 'SUM_DAY']
 
 export function validateHydroConfig(config) {
 	const errors = []
@@ -63,6 +67,14 @@ export function validatePluvioConfig(config) {
 
 	if (config.refresh !== undefined && (typeof config.refresh !== 'number' || config.refresh < 1)) {
 		errors.push('"refresh" doit être un nombre positif (en minutes).')
+	}
+
+	if (config.groupFunc !== undefined && !GROUP_FUNCS.includes(config.groupFunc)) {
+		errors.push(`"groupFunc" doit valoir ${GROUP_FUNCS.map(g => `"${g}"`).join(', ')}.`)
+	}
+
+	if (config.colorCumul !== undefined && typeof config.colorCumul !== 'string') {
+		errors.push('"colorCumul" doit être une chaîne (couleur CSS).')
 	}
 
 	return { valid: errors.length === 0, errors }

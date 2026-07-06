@@ -254,6 +254,18 @@
           <option value="false">Non</option>
         </select>
       </label>
+      <label>
+        Couleur du cumul
+        <input type="color" name="colorCumul" value="#FF6B00" />
+      </label>
+      <label>
+        Agrégation (groupFunc)
+        <select name="groupFunc">
+          <option value="all">Brute (all)</option>
+          <option value="SUM_HOUR">Cumul horaire (SUM_HOUR)</option>
+          <option value="SUM_DAY">Cumul journalier (SUM_DAY)</option>
+        </select>
+      </label>
     </div>
 
     <h2>Dimensions iframe</h2>
@@ -338,6 +350,8 @@
         config.threshold = data.get('threshold') === 'true';
       } else {
         config.cumul = data.get('cumul') === 'true';
+        config.colorCumul = data.get('colorCumul');
+        config.groupFunc = data.get('groupFunc');
       }
 
       return { type: type, config: config };
@@ -348,7 +362,9 @@
       delete embedConfig.width;
       delete embedConfig.height;
 
-      if (embedConfig.color === '#007BFF') delete embedConfig.color;
+      // Les <input type="color"> renvoient toujours un hex minuscule : on
+      // compare sans tenir compte de la casse pour omettre les valeurs par défaut.
+      if ((embedConfig.color || '').toUpperCase() === '#007BFF') delete embedConfig.color;
       if (embedConfig.hours === 3) delete embedConfig.hours;
       if (embedConfig.refresh === 5) delete embedConfig.refresh;
       if (type === 'hydro') {
@@ -356,7 +372,11 @@
         if (embedConfig.ngf === true) delete embedConfig.ngf;
         if (embedConfig.threshold === true) delete embedConfig.threshold;
       }
-      if (type === 'pluvio' && embedConfig.cumul === true) delete embedConfig.cumul;
+      if (type === 'pluvio') {
+        if (embedConfig.cumul === true) delete embedConfig.cumul;
+        if ((embedConfig.colorCumul || '').toUpperCase() === '#FF6B00') delete embedConfig.colorCumul;
+        if (embedConfig.groupFunc === 'all') delete embedConfig.groupFunc;
+      }
 
       var configStr = JSON.stringify(embedConfig, null, '    ');
       var width = config.width || '100%';

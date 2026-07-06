@@ -108,4 +108,26 @@ describe('validatePluvioConfig', () => {
 	it('rejects invalid refresh', () => {
 		expect(validatePluvioConfig({ ...validPluvioConfig, refresh: 0 }).valid).toBe(false)
 	})
+
+	it('accepts the supported groupFunc values', () => {
+		for (const groupFunc of ['all', 'SUM_HOUR', 'SUM_DAY']) {
+			expect(validatePluvioConfig({ ...validPluvioConfig, groupFunc }).valid).toBe(true)
+		}
+	})
+
+	it('rejects an unknown groupFunc', () => {
+		const { valid, errors } = validatePluvioConfig({ ...validPluvioConfig, groupFunc: 'SUM_WEEK' })
+		expect(valid).toBe(false)
+		expect(errors.some(e => e.includes('groupFunc'))).toBe(true)
+	})
+
+	it('accepts a string colorCumul', () => {
+		expect(validatePluvioConfig({ ...validPluvioConfig, colorCumul: '#00A86B' }).valid).toBe(true)
+	})
+
+	it('rejects a non-string colorCumul', () => {
+		const { valid, errors } = validatePluvioConfig({ ...validPluvioConfig, colorCumul: 123 })
+		expect(valid).toBe(false)
+		expect(errors.some(e => e.includes('colorCumul'))).toBe(true)
+	})
 })

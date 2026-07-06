@@ -33,6 +33,13 @@ export async function fetchHydroThresholds(apiUrl, token, stationId) {
 	return handleResponse(res, `Impossible de récupérer les seuils de la station ${stationId}`)
 }
 
+export async function fetchPluvioStation(apiUrl, token, stationId) {
+	const res = await fetch(`${apiUrl}/pluviometer/${stationId}`, {
+		headers: headers(token)
+	})
+	return handleResponse(res, `Station pluviométrique ${stationId} introuvable`)
+}
+
 export async function fetchPluvioMeasures(apiUrl, token, params) {
 	const res = await fetch(`${apiUrl}/pluviometer/chartMeasures`, {
 		method: 'POST',

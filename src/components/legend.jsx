@@ -1,7 +1,7 @@
 import { formaterNombreFr } from '../lib/util/number.js'
 import './legend.css'
 
-const Legend = ({ thresholds, seriesVisibility, onToggle }) => {
+const Legend = ({ thresholds, seriesVisibility, onToggle, unit = 'm' }) => {
 	if (!thresholds || thresholds.length === 0) return null
 
 	return (
@@ -32,7 +32,7 @@ const Legend = ({ thresholds, seriesVisibility, onToggle }) => {
 						title={`Cliquer pour ${isActive ? 'masquer' : 'afficher'} le seuil ${th.name}`}
 					>
 						<span aria-hidden="true" style={lineStyle} />
-						<span>{th.name} ({formaterNombreFr(th.value)} m)</span>
+						<span>{th.name} ({formaterNombreFr(th.value)} {unit})</span>
 					</button>
 				)
 			})}

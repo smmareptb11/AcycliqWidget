@@ -1,10 +1,10 @@
-import { useCallback, useState, useMemo } from 'preact/hooks'
+import { useCallback, useEffect, useState, useMemo } from 'preact/hooks'
 import UPlot from 'uplot'
 import 'uplot/dist/uPlot.min.css'
 import { fullDateTimeFormatter } from '../lib/util/date.js'
 import { formaterNombreFr } from '../lib/util/number.js'
-import { fetchPluvioMeasures } from '../lib/api.js'
-import { buildPluvioPlotData, computeWindowedCumul } from '../lib/data-transform.js'
+import { fetchPluvioStation, fetchPluvioMeasures } from '../lib/api.js'
+import { buildPluvioPlotData, computeWindowedCumul, pluvioBarLabel } from '../lib/data-transform.js'
 import { useChart, useDateRange, useAutoRefresh, xAxisConfig } from '../lib/hooks/use-chart.js'
 import ChartControls from './chart-controls.jsx'
 import './pluvio-chart.css'
@@ -45,30 +45,51 @@ function recomputeCumulScale(u, minX, maxX) {
 }
 
 const PluvioChart = ({ config }) => {
-	const [state, setState] = useState({ loading: true, error: null, measures: null })
+	const [state, setState] = useState({ loading: true, error: null, measures: null, stationInfo: null })
 
-	const { apiUrl, token, idStation, color = '#007BFF', hours = 3, cumul = true, refresh = 5, startDate, endDate } = config
+	const { apiUrl, token, idStation, color = '#007BFF', colorCumul = '#FF6B00', hours = 3, cumul = true, groupFunc = 'all', refresh = 5, startDate, endDate } = config
+
+	// SUM_DAY aggregates rainfall per day; the other modes keep the hourly
+	// cadence. The bars label must reflect the chosen aggregation.
+	const barLabel = pluvioBarLabel(groupFunc)
 
 	const { startMs, getEndMs } = useDateRange(startDate, endDate)
+
+	// Station metadata is quasi-immutable: fetched once per (station), never
+	// on the refresh interval — same split as the hydro widget. It only feeds
+	// the display title, so a failure must not take down the (working) chart:
+	// we log it and fall back to the station identifier as the title.
+	useEffect(() => {
+		let cancelled = false
+		fetchPluvioStation(apiUrl, token, idStation)
+			.then(stationInfo => {
+				if (!cancelled) setState(s => ({ ...s, stationInfo }))
+			})
+			.catch(err => {
+				console.error(`Nom de la station pluviométrique ${idStation} indisponible :`, err)
+				if (!cancelled) setState(s => ({ ...s, stationInfo: { name: `Station ${idStation}` } }))
+			})
+		return () => { cancelled = true }
+	}, [apiUrl, token, idStation])
 
 	const loadData = useCallback(async () => {
 		try {
 			const measures = await fetchPluvioMeasures(apiUrl, token, {
 				stationId: idStation,
 				dataType: 1,
-				groupFunc: 'all',
+				groupFunc,
 				chartMode: true,
 				startDate: startMs,
 				endDate: getEndMs(),
 				distinctByCodePoint: true
 			})
 
-			setState({ loading: false, error: null, measures })
+			setState(s => ({ ...s, loading: false, error: null, measures }))
 		}
 		catch (err) {
 			setState(s => ({ ...s, loading: false, error: err.message }))
 		}
-	}, [apiUrl, token, idStation, startMs, getEndMs])
+	}, [apiUrl, token, idStation, groupFunc, startMs, getEndMs])
 
 	useAutoRefresh(loadData, refresh)
 
@@ -100,7 +121,7 @@ const PluvioChart = ({ config }) => {
 					value: (u, raw) => raw ? fullDateTimeFormatter(new Date(raw * 1000)) : '-'
 				},
 				{
-					label: 'Cumul pluvio / 1h',
+					label: barLabel,
 					stroke: color,
 					fill: color + '80',
 					width: 1,
@@ -126,7 +147,7 @@ const PluvioChart = ({ config }) => {
 			if (cumul) {
 				series.push({
 					label: 'Cumul pluvio sur l\'intervalle',
-					stroke: '#FF6B00',
+					stroke: colorCumul,
 					width: 2,
 					scale: 'cumul',
 					spanGaps: true,
@@ -185,6 +206,10 @@ const PluvioChart = ({ config }) => {
 
 	return (
 		<div className="acycliq-pluvio">
+			{state.stationInfo?.name && (
+				<div className="acycliq-title">{state.stationInfo.name}</div>
+			)}
+
 			<ChartControls activeHours={activeHours} onZoom={handleZoom} onExportPNG={handleExportPNG} />
 
 			<div className="chart-wrapper">
@@ -195,11 +220,11 @@ const PluvioChart = ({ config }) => {
 			<div className="pluvio-legend" role="list" aria-label="Légende pluviométrie">
 				<span className="pluvio-legend-item" role="listitem">
 					<span className="pluvio-legend-bar" style={{ backgroundColor: color }} aria-hidden="true" />
-					<span>Cumul pluvio / 1h (mm)</span>
+					<span>{barLabel} (mm)</span>
 				</span>
 				{cumul && (
 					<span className="pluvio-legend-item" role="listitem">
-						<span className="pluvio-legend-line" aria-hidden="true" />
+						<span className="pluvio-legend-line" style={{ backgroundColor: colorCumul }} aria-hidden="true" />
 						<span>Cumul pluvio sur l'intervalle (mm)</span>
 					</span>
 				)}
