@@ -182,6 +182,10 @@ const HydroChart = ({ config }) => {
 
 	return (
 		<div className="acycliq-hydro">
+			{state.stationInfo?.name && (
+				<div className="acycliq-title">{state.stationInfo.name}</div>
+			)}
+
 			<div className="acycliq-header">
 				{lastValue != null && (
 					<span className="last-value">

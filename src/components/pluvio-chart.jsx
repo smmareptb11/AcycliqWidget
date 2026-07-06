@@ -1,9 +1,9 @@
-import { useCallback, useState, useMemo } from 'preact/hooks'
+import { useCallback, useEffect, useState, useMemo } from 'preact/hooks'
 import UPlot from 'uplot'
 import 'uplot/dist/uPlot.min.css'
 import { fullDateTimeFormatter } from '../lib/util/date.js'
 import { formaterNombreFr } from '../lib/util/number.js'
-import { fetchPluvioMeasures } from '../lib/api.js'
+import { fetchPluvioStation, fetchPluvioMeasures } from '../lib/api.js'
 import { buildPluvioPlotData, computeWindowedCumul } from '../lib/data-transform.js'
 import { useChart, useDateRange, useAutoRefresh, xAxisConfig } from '../lib/hooks/use-chart.js'
 import ChartControls from './chart-controls.jsx'
@@ -45,11 +45,28 @@ function recomputeCumulScale(u, minX, maxX) {
 }
 
 const PluvioChart = ({ config }) => {
-	const [state, setState] = useState({ loading: true, error: null, measures: null })
+	const [state, setState] = useState({ loading: true, error: null, measures: null, stationInfo: null })
 
 	const { apiUrl, token, idStation, color = '#007BFF', hours = 3, cumul = true, refresh = 5, startDate, endDate } = config
 
 	const { startMs, getEndMs } = useDateRange(startDate, endDate)
+
+	// Station metadata is quasi-immutable: fetched once per (station), never
+	// on the refresh interval — same split as the hydro widget. It only feeds
+	// the display title, so a failure must not take down the (working) chart:
+	// we log it and fall back to the station identifier as the title.
+	useEffect(() => {
+		let cancelled = false
+		fetchPluvioStation(apiUrl, token, idStation)
+			.then(stationInfo => {
+				if (!cancelled) setState(s => ({ ...s, stationInfo }))
+			})
+			.catch(err => {
+				console.error(`Nom de la station pluviométrique ${idStation} indisponible :`, err)
+				if (!cancelled) setState(s => ({ ...s, stationInfo: { name: `Station ${idStation}` } }))
+			})
+		return () => { cancelled = true }
+	}, [apiUrl, token, idStation])
 
 	const loadData = useCallback(async () => {
 		try {
@@ -63,7 +80,7 @@ const PluvioChart = ({ config }) => {
 				distinctByCodePoint: true
 			})
 
-			setState({ loading: false, error: null, measures })
+			setState(s => ({ ...s, loading: false, error: null, measures }))
 		}
 		catch (err) {
 			setState(s => ({ ...s, loading: false, error: err.message }))
@@ -185,6 +202,10 @@ const PluvioChart = ({ config }) => {
 
 	return (
 		<div className="acycliq-pluvio">
+			{state.stationInfo?.name && (
+				<div className="acycliq-title">{state.stationInfo.name}</div>
+			)}
+
 			<ChartControls activeHours={activeHours} onZoom={handleZoom} onExportPNG={handleExportPNG} />
 
 			<div className="chart-wrapper">
