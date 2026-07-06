@@ -5,6 +5,8 @@ import { shortDateTimeFormatter } from '../util/date.js'
 const DEFAULT_CHART_HEIGHT = 300
 const DEFAULT_RANGER_HEIGHT = 28
 const RANGER_OFFSET = 100
+const MIN_WINDOW_S = 3600 // fenêtre temporelle minimale sélectionnable : 1h
+const MIN_SEL_PX = 24 // largeur de rendu minimale de la sélection du ranger (garde 1h visible + poignées séparées)
 
 /**
  * Measure the available width of a container without being inflated
@@ -21,6 +23,48 @@ function measureWidth(containerEl) {
 		return w || 400
 	}
 	return containerEl.offsetWidth || 400
+}
+
+/**
+ * Rend la boîte de sélection du ranger pour une fenêtre [min, max] (secondes),
+ * en imposant une largeur visuelle minimale (MIN_SEL_PX) : une fenêtre très
+ * courte (ex. 1h sur 30 jours ≈ sous-pixel) reste ainsi visible et ses deux
+ * poignées séparées, la boîte étant centrée sur la fenêtre réelle. Le second
+ * argument `false` empêche le re-déclenchement du hook setSelect (récursion).
+ */
+function renderRangerSelect(uRanger, min, max) {
+	let left = Math.round(uRanger.valToPos(min, 'x'))
+	let width = Math.round(uRanger.valToPos(max, 'x')) - left
+	if (width < MIN_SEL_PX) {
+		const center = left + width / 2
+		left = Math.round(Math.max(0, Math.min(center - MIN_SEL_PX / 2, uRanger.bbox.width - MIN_SEL_PX)))
+		width = MIN_SEL_PX
+	}
+	uRanger.setSelect({ left, width, height: uRanger.bbox.height }, false)
+}
+
+/**
+ * Borne une fenêtre [min, max] (secondes) à l'étendue des données et impose la
+ * durée minimale MIN_WINDOW_S en faisant grandir le bord opposé à celui tiré
+ * (`edge` : 'L' gauche, 'R' droite, 'body' translation à durée constante).
+ */
+function clampWindow(xVals, min, max, edge) {
+	const lo = xVals[0]
+	const hi = xVals[xVals.length - 1]
+	if (max - min < MIN_WINDOW_S) {
+		if (edge === 'R') max = min + MIN_WINDOW_S
+		else min = max - MIN_WINDOW_S
+	}
+	if (edge === 'body') {
+		const dur = max - min
+		if (min < lo) { min = lo; max = lo + dur }
+		if (max > hi) { max = hi; min = hi - dur }
+	}
+	else {
+		if (min < lo) min = lo
+		if (max > hi) max = hi
+	}
+	return { min, max }
 }
 
 export function useDateRange(startDate, endDate) {
@@ -189,9 +233,7 @@ export function useChart({ plotData, hours, color, buildChartOpts, formatTooltip
 			hooks: {
 				ready: [
 					uRanger => {
-						const lPos = Math.round(uRanger.valToPos(initMin, 'x'))
-						const wPos = Math.round(uRanger.valToPos(initMax, 'x')) - lPos
-						uRanger.setSelect({ left: lPos, width: wPos, height: uRanger.bbox.height }, false)
+						renderRangerSelect(uRanger, initMin, initMax)
 
 						const debounce = fn => {
 							let raf
@@ -203,27 +245,27 @@ export function useChart({ plotData, hours, color, buildChartOpts, formatTooltip
 						const on = (ev, el, fn) => el.addEventListener(ev, fn)
 						const off = (ev, el, fn) => el.removeEventListener(ev, fn)
 
-						let x0, lft0, wid0
+						let x0, min0, max0, secPerPx
 
-						function update(newLft, newWid) {
-							const newRgt = newLft + newWid
-							const maxRgt = uRanger.bbox.width
-							if (newLft >= 0 && newRgt <= maxRgt && newWid >= 10) {
-								uRanger.setSelect({ left: newLft, width: newWid, height: uRanger.bbox.height }, false)
-								const min = uRanger.posToVal(newLft, 'x')
-								const max = uRanger.posToVal(newLft + newWid, 'x')
-								uPlotRef.current.setScale('x', { min, max })
-							}
+						// Le drag de la réglette travaille en TEMPS (min/max), pas en pixels :
+						// la boîte visuelle est recalculée ensuite avec un plancher de largeur,
+						// pour que la fenêtre 1h reste visible et les poignées ne se chevauchent pas.
+						function applyWindow(rawMin, rawMax, edge) {
+							const { min, max } = clampWindow(plotData[0], rawMin, rawMax, edge)
+							uPlotRef.current.setScale('x', { min, max })
+							renderRangerSelect(uRanger, min, max)
 						}
 
 						function bindMove(e, onMove) {
 							x0 = e.clientX
-							lft0 = uRanger.select.left
-							wid0 = uRanger.select.width
+							const xs = uPlotRef.current.scales.x
+							min0 = xs.min
+							max0 = xs.max
+							secPerPx = (uRanger.posToVal(uRanger.bbox.width, 'x') - uRanger.posToVal(0, 'x')) / uRanger.bbox.width
 							// Pointer Events unifient souris/tactile/stylet ; capture pour fiabiliser le suivi hors de l'élément
 							try { e.target.setPointerCapture(e.pointerId) }
 							catch { /* pointeur déjà relâché */ }
-							const _onMove = debounce(evt => onMove(evt.clientX - x0))
+							const _onMove = debounce(evt => onMove((evt.clientX - x0) * secPerPx))
 							const _onUp = () => {
 								off('pointermove', document, _onMove)
 								off('pointerup', document, _onUp)
@@ -244,17 +286,19 @@ export function useChart({ plotData, hours, color, buildChartOpts, formatTooltip
 						gripR.classList.add('u-grip-r')
 						selector.appendChild(gripR)
 
-						on('pointerdown', selector, e => bindMove(e, diff => update(lft0 + diff, wid0)))
-						on('pointerdown', gripL, e => bindMove(e, diff => update(lft0 + diff, wid0 - diff)))
-						on('pointerdown', gripR, e => bindMove(e, diff => update(lft0, wid0 + diff)))
+						on('pointerdown', selector, e => bindMove(e, dt => applyWindow(min0 + dt, max0 + dt, 'body')))
+						on('pointerdown', gripL, e => bindMove(e, dt => applyWindow(min0 + dt, max0, 'L')))
+						on('pointerdown', gripR, e => bindMove(e, dt => applyWindow(min0, max0 + dt, 'R')))
 					}
 				],
 				setSelect: [
+					// Drag natif d'uPlot (tracer une nouvelle sélection) : borne la fenêtre
+					// dessinée au minimum de 1h et re-rend la boîte avec le plancher de largeur.
 					u => {
 						const { left, width: selWidth } = u.select
-						const min = u.posToVal(left, 'x')
-						const max = u.posToVal(left + selWidth, 'x')
+						const { min, max } = clampWindow(plotData[0], u.posToVal(left, 'x'), u.posToVal(left + selWidth, 'x'), 'R')
 						uPlotRef.current.setScale('x', { min, max })
+						renderRangerSelect(u, min, max)
 					}
 				]
 			}
@@ -273,9 +317,7 @@ export function useChart({ plotData, hours, color, buildChartOpts, formatTooltip
 			// Réaligne la fenêtre du ranger sur l'échelle x courante (les positions en px changent avec la largeur)
 			const xScale = uPlotRef.current.scales.x
 			if (uRangerRef.current && xScale?.min != null && xScale?.max != null) {
-				const left = Math.round(uRangerRef.current.valToPos(xScale.min, 'x'))
-				const width = Math.round(uRangerRef.current.valToPos(xScale.max, 'x')) - left
-				uRangerRef.current.setSelect({ left, width, height: uRangerRef.current.bbox.height }, false)
+				renderRangerSelect(uRangerRef.current, xScale.min, xScale.max)
 			}
 		}
 		window.addEventListener('resize', handleResize)
@@ -299,10 +341,7 @@ export function useChart({ plotData, hours, color, buildChartOpts, formatTooltip
 		const max = xVals[xVals.length - 1]
 		const min = zoomHours ? max - zoomHours * 3600 : xVals[0]
 		uPlotRef.current.setScale('x', { min, max })
-
-		const left = Math.round(uRangerRef.current.valToPos(min, 'x'))
-		const width = Math.round(uRangerRef.current.valToPos(max, 'x')) - left
-		uRangerRef.current.setSelect({ left, width, height: uRangerRef.current.bbox.height }, false)
+		renderRangerSelect(uRangerRef.current, min, max)
 	}, [plotData])
 
 	const handleExportPNG = useCallback(() => {

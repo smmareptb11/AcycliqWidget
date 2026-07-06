@@ -52,25 +52,39 @@
 .chart-ranger .u-grip-r {
 	position: absolute;
 	top: 0;
-	width: 10px;
+	width: 8px;
 	height: 100%;
 	background: rgba(255, 255, 255, 0.7);
 	border: 1px solid #666;
 	cursor: ew-resize;
 }
 
-.chart-ranger .u-grip-l { left: -5px; }
-.chart-ranger .u-grip-r { right: -5px; }
+/* Poignées placées juste à l'EXTÉRIEUR des bords de la sélection : elles ne
+   peuvent jamais se chevaucher, même quand la sélection est minuscule. */
+.chart-ranger .u-grip-l { right: 100%; }
+.chart-ranger .u-grip-r { left: 100%; }
 
-/* Élargit la cible tactile (~44px) sans changer l'apparence de la barre visible */
+/* Zone tactile étendue vers l'extérieur uniquement (bornée au bord de la
+   sélection côté intérieur) → jamais de recouvrement entre les deux poignées. */
 .chart-ranger .u-grip-l::before,
 .chart-ranger .u-grip-r::before {
 	content: '';
 	position: absolute;
-	top: -12px;
-	bottom: -12px;
-	left: -17px;
-	right: -17px;
+	top: -10px;
+	bottom: -10px;
+}
+.chart-ranger .u-grip-l::before { left: -16px; right: 0; }
+.chart-ranger .u-grip-r::before { left: 0; right: -16px; }
+
+/* Cibles tactiles élargies (~44px) sur pointeurs grossiers (doigt). */
+@media (pointer: coarse) {
+	.chart-ranger .u-grip-l::before,
+	.chart-ranger .u-grip-r::before {
+		top: -16px;
+		bottom: -16px;
+	}
+	.chart-ranger .u-grip-l::before { left: -36px; }
+	.chart-ranger .u-grip-r::before { right: -36px; }
 }
 
 .acycliq-tooltip {
