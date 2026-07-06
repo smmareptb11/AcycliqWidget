@@ -32,7 +32,7 @@ function measureWidth(containerEl) {
  * poignées séparées, la boîte étant centrée sur la fenêtre réelle. Le second
  * argument `false` empêche le re-déclenchement du hook setSelect (récursion).
  */
-function renderRangerSelect(uRanger, min, max) {
+export function renderRangerSelect(uRanger, min, max) {
 	const maxWidth = uRanger.bbox.width
 	let left = Math.round(uRanger.valToPos(min, 'x'))
 	let width = Math.round(uRanger.valToPos(max, 'x')) - left
