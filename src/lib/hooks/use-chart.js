@@ -33,12 +33,15 @@ function measureWidth(containerEl) {
  * argument `false` empêche le re-déclenchement du hook setSelect (récursion).
  */
 function renderRangerSelect(uRanger, min, max) {
+	const maxWidth = uRanger.bbox.width
 	let left = Math.round(uRanger.valToPos(min, 'x'))
 	let width = Math.round(uRanger.valToPos(max, 'x')) - left
-	if (width < MIN_SEL_PX) {
+	// Plancher de largeur, borné à la largeur de la réglette (cas d'une réglette très étroite)
+	const minWidth = Math.min(MIN_SEL_PX, maxWidth)
+	if (width < minWidth) {
 		const center = left + width / 2
-		left = Math.round(Math.max(0, Math.min(center - MIN_SEL_PX / 2, uRanger.bbox.width - MIN_SEL_PX)))
-		width = MIN_SEL_PX
+		left = Math.round(Math.max(0, Math.min(center - minWidth / 2, maxWidth - minWidth)))
+		width = minWidth
 	}
 	uRanger.setSelect({ left, width, height: uRanger.bbox.height }, false)
 }
@@ -48,21 +51,30 @@ function renderRangerSelect(uRanger, min, max) {
  * durée minimale MIN_WINDOW_S en faisant grandir le bord opposé à celui tiré
  * (`edge` : 'L' gauche, 'R' droite, 'body' translation à durée constante).
  */
-function clampWindow(xVals, min, max, edge) {
+export function clampWindow(xVals, min, max, edge) {
 	const lo = xVals[0]
 	const hi = xVals[xVals.length - 1]
-	if (max - min < MIN_WINDOW_S) {
-		if (edge === 'R') max = min + MIN_WINDOW_S
-		else min = max - MIN_WINDOW_S
-	}
 	if (edge === 'body') {
+		// Translation : conserve la durée, borne seulement la position.
 		const dur = max - min
 		if (min < lo) { min = lo; max = lo + dur }
 		if (max > hi) { max = hi; min = hi - dur }
+		return { min, max }
 	}
-	else {
-		if (min < lo) min = lo
-		if (max > hi) max = hi
+	// Redimensionnement : borner d'abord aux données, PUIS garantir la durée
+	// minimale en poussant le bord opposé à celui tiré (sinon le bornage aux
+	// bornes pourrait re-rétrécir la fenêtre sous MIN_WINDOW_S, cf. bords).
+	min = Math.max(lo, min)
+	max = Math.min(hi, max)
+	if (max - min < MIN_WINDOW_S) {
+		if (edge === 'R') {
+			max = Math.min(hi, min + MIN_WINDOW_S)
+			min = Math.max(lo, max - MIN_WINDOW_S)
+		}
+		else {
+			min = Math.max(lo, max - MIN_WINDOW_S)
+			max = Math.min(hi, min + MIN_WINDOW_S)
+		}
 	}
 	return { min, max }
 }
