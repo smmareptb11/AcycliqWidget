@@ -76,10 +76,12 @@ npm install acycliq-widget
 | `startDate` | non | string | Now - 30j | Date de début (ISO 8601) |
 | `endDate` | non | string | Now | Date de fin (ISO 8601) |
 | `hours` | non | number | `3` | Amplitude initiale de la fenêtre visible (en heures) |
-| `ngf` | non | boolean | `true` | Conversion en mètres NGF (si altitude disponible) |
+| `ngf` | non | boolean | `true` | Conversion en mètres NGF (si altitude disponible) — appliquée aussi aux seuils |
 | `threshold` | non | boolean | `true` | Afficher les seuils de la station |
 | `refresh` | non | number | `5` | Intervalle de rafraîchissement (en minutes) |
 | `src` | non | string | auto | URL de l'iframe (auto-détecté par défaut) |
+
+> Le nom de la station est affiché en titre au-dessus du graphique (récupéré via l'API).
 
 ## Paramètres — Widget Pluvio
 
@@ -91,13 +93,17 @@ npm install acycliq-widget
 | `idStation` | oui | number | — | Identifiant de la station pluviométrique |
 | `width` | non | string | `'100%'` | Largeur de l'iframe |
 | `height` | non | string | `'100%'` | Hauteur de l'iframe |
-| `color` | non | string | `'#007BFF'` | Couleur principale du graphique |
+| `color` | non | string | `'#007BFF'` | Couleur des barres de pluviométrie |
+| `colorCumul` | non | string | `'#FF6B00'` | Couleur de la courbe de cumul de pluie |
 | `startDate` | non | string | Now - 30j | Date de début (ISO 8601) |
 | `endDate` | non | string | Now | Date de fin (ISO 8601) |
 | `hours` | non | number | `3` | Amplitude initiale de la fenêtre visible (en heures) |
 | `cumul` | non | boolean | `true` | Afficher la courbe cumulative |
+| `groupFunc` | non | string | `'all'` | Niveau d'agrégation : `'all'`, `'SUM_HOUR'` (cumul horaire) ou `'SUM_DAY'` (cumul journalier) |
 | `refresh` | non | number | `5` | Intervalle de rafraîchissement (en minutes) |
 | `src` | non | string | auto | URL de l'iframe (auto-détecté par défaut) |
+
+> Le nom de la station est affiché en titre au-dessus du graphique (récupéré via l'API).
 
 ## Multi-instances
 
