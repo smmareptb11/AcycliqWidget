@@ -318,8 +318,8 @@ export function useChart({ plotData, hours, color, buildChartOpts, formatTooltip
 
 		uRangerRef.current = new UPlot(rangerOpts, [plotData[0], plotData[1]], rangerRef.current)
 
-		// Reflow to the container width. Also runs when the container is resized
-		// without a window resize (iframe reflow, orientation change, late layout on mobile).
+		// Recale à la largeur du conteneur. Se déclenche aussi quand le conteneur
+		// change de taille sans resize de fenêtre (iframe, rotation, layout tardif sur mobile).
 		const handleResize = () => {
 			if (!chartRef.current || !uPlotRef.current) return
 			const w = measureWidth(chartRef.current)
