@@ -6,7 +6,9 @@ import { formaterNombreFr } from '../lib/util/number.js'
 import { fetchPluvioStation, fetchPluvioMeasures } from '../lib/api.js'
 import { buildPluvioPlotData, computeWindowedCumul, pluvioBarLabel } from '../lib/data-transform.js'
 import { useChart, useDateRange, useAutoRefresh, xAxisConfig } from '../lib/hooks/use-chart.js'
+import { refreshStart, refreshSuccess, refreshFailure } from '../lib/refresh-state.js'
 import ChartControls from './chart-controls.jsx'
+import RefreshStatus from './refresh-status.jsx'
 import './pluvio-chart.css'
 
 const barSize = UPlot.paths.bars({ size: [0.8], align: 1 })
@@ -45,7 +47,7 @@ function recomputeCumulScale(u, minX, maxX) {
 }
 
 const PluvioChart = ({ config }) => {
-	const [state, setState] = useState({ loading: true, error: null, measures: null, stationInfo: null })
+	const [state, setState] = useState({ loading: true, error: null, refreshing: false, refreshError: null, measures: null, stationInfo: null })
 
 	const { apiUrl, token, idStation, color = '#007BFF', colorCumul = '#FF6B00', hours = 3, cumul = true, groupFunc = 'all', refresh = 5, startDate, endDate } = config
 
@@ -73,6 +75,7 @@ const PluvioChart = ({ config }) => {
 	}, [apiUrl, token, idStation])
 
 	const loadData = useCallback(async () => {
+		setState(refreshStart)
 		try {
 			const measures = await fetchPluvioMeasures(apiUrl, token, {
 				stationId: idStation,
@@ -84,10 +87,10 @@ const PluvioChart = ({ config }) => {
 				distinctByCodePoint: true
 			})
 
-			setState(s => ({ ...s, loading: false, error: null, measures }))
+			setState(s => refreshSuccess(s, measures))
 		}
 		catch (err) {
-			setState(s => ({ ...s, loading: false, error: err.message }))
+			setState(s => refreshFailure(s, err.message, Date.now()))
 		}
 	}, [apiUrl, token, idStation, groupFunc, startMs, getEndMs])
 
@@ -207,7 +210,14 @@ const PluvioChart = ({ config }) => {
 	return (
 		<div className="acycliq-pluvio">
 			{state.stationInfo?.name && (
-				<div className="acycliq-title">{state.stationInfo.name}</div>
+				<div className="acycliq-title">
+					{state.stationInfo.name}
+					<RefreshStatus
+						refreshing={state.refreshing}
+						refreshError={state.refreshError}
+						onForceRefresh={loadData}
+					/>
+				</div>
 			)}
 
 			<ChartControls activeHours={activeHours} onZoom={handleZoom} onExportPNG={handleExportPNG} />

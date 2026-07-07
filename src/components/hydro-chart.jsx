@@ -5,12 +5,14 @@ import { formaterNombreFr } from '../lib/util/number.js'
 import { fetchHydroStation, fetchHydroMeasures, fetchHydroThresholds } from '../lib/api.js'
 import { buildHydroPlotData, applyThresholdsNgf } from '../lib/data-transform.js'
 import { useChart, useDateRange, useAutoRefresh, xAxisConfig } from '../lib/hooks/use-chart.js'
+import { refreshStart, refreshSuccess, refreshFailure } from '../lib/refresh-state.js'
 import ChartControls from './chart-controls.jsx'
 import Legend from './legend.jsx'
+import RefreshStatus from './refresh-status.jsx'
 import './hydro-chart.css'
 
 const HydroChart = ({ config }) => {
-	const [state, setState] = useState({ loading: true, error: null, measures: null, thresholds: [], stationInfo: null })
+	const [state, setState] = useState({ loading: true, error: null, refreshing: false, refreshError: null, measures: null, thresholds: [], stationInfo: null })
 	const [seriesVisibility, setSeriesVisibility] = useState(new Map())
 
 	const { apiUrl, token, idStation, color = '#007BFF', dataType = 4, hours = 3, ngf: useNgf = true, threshold: showThresholds = true, refresh = 5, startDate, endDate } = config
@@ -49,6 +51,7 @@ const HydroChart = ({ config }) => {
 
 	// Measures are the only piece rebuilt on the refresh interval.
 	const loadMeasures = useCallback(async () => {
+		setState(refreshStart)
 		try {
 			const measures = await fetchHydroMeasures(apiUrl, token, {
 				stationId: idStation,
@@ -58,10 +61,10 @@ const HydroChart = ({ config }) => {
 				startDate: startMs,
 				endDate: getEndMs()
 			})
-			setState(s => ({ ...s, loading: false, error: null, measures }))
+			setState(s => refreshSuccess(s, measures))
 		}
 		catch (err) {
-			setState(s => ({ ...s, loading: false, error: err.message }))
+			setState(s => refreshFailure(s, err.message, Date.now()))
 		}
 	}, [apiUrl, token, idStation, dataType, startMs, getEndMs])
 
@@ -183,7 +186,14 @@ const HydroChart = ({ config }) => {
 	return (
 		<div className="acycliq-hydro">
 			{state.stationInfo?.name && (
-				<div className="acycliq-title">{state.stationInfo.name}</div>
+				<div className="acycliq-title">
+					{state.stationInfo.name}
+					<RefreshStatus
+						refreshing={state.refreshing}
+						refreshError={state.refreshError}
+						onForceRefresh={loadMeasures}
+					/>
+				</div>
 			)}
 
 			<div className="acycliq-header">
