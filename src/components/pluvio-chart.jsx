@@ -6,7 +6,7 @@ import { formaterNombreFr } from '../lib/util/number.js'
 import { fetchPluvioStation, fetchPluvioMeasures } from '../lib/api.js'
 import { buildPluvioPlotData, computeWindowedCumul, pluvioBarLabel } from '../lib/data-transform.js'
 import { useChart, useDateRange, useAutoRefresh, xAxisConfig } from '../lib/hooks/use-chart.js'
-import { CHART_HEIGHT, FILL_ALPHA_SUFFIX } from '../lib/theme.js'
+import { CHART_HEIGHT, FILL_ALPHA_SUFFIX, axisStroke } from '../lib/theme.js'
 import { refreshStart, refreshSuccess, refreshFailure } from '../lib/refresh-state.js'
 import ChartControls from './chart-controls.jsx'
 import RefreshStatus from './refresh-status.jsx'
@@ -140,7 +140,7 @@ const PluvioChart = ({ config }) => {
 
 			const axes = [
 				xAxisConfig(),
-				{ label: 'pluviométrie (mm)', dir: -1 }
+				{ label: 'pluviométrie (mm)', dir: -1, stroke: axisStroke() }
 			]
 
 			const scales = {
@@ -165,6 +165,7 @@ const PluvioChart = ({ config }) => {
 					label: 'pluviométrie cumulée (mm)',
 					side: 1,
 					scale: 'cumul',
+					stroke: axisStroke(),
 					grid: { show: false }
 				})
 

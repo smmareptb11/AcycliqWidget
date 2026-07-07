@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback, useState, useMemo } from 'preact/hooks'
 import UPlot from 'uplot'
 import { shortDateTimeFormatter } from '../util/date.js'
-import { CHART_HEIGHT, AXIS_STROKE, RANGER_FILL_ALPHA } from '../theme.js'
+import { CHART_HEIGHT, axisStroke, RANGER_FILL_ALPHA } from '../theme.js'
 
 const DEFAULT_CHART_HEIGHT = CHART_HEIGHT
 const DEFAULT_RANGER_HEIGHT = 28
@@ -375,7 +375,7 @@ export function useChart({ plotData, hours, color, buildChartOpts, formatTooltip
 
 export function xAxisConfig() {
 	return {
-		stroke: AXIS_STROKE,
+		stroke: axisStroke(),
 		grid: { show: false },
 		space: 70,
 		values: (u, vals) => vals.map(v => shortDateTimeFormatter(v * 1000))

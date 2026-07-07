@@ -5,7 +5,7 @@ import { formaterNombreFr } from '../lib/util/number.js'
 import { fetchHydroStation, fetchHydroMeasures, fetchHydroThresholds } from '../lib/api.js'
 import { buildHydroPlotData, applyThresholdsNgf } from '../lib/data-transform.js'
 import { useChart, useDateRange, useAutoRefresh, xAxisConfig } from '../lib/hooks/use-chart.js'
-import { CHART_HEIGHT, THRESHOLD_FALLBACK } from '../lib/theme.js'
+import { CHART_HEIGHT, THRESHOLD_FALLBACK, axisStroke } from '../lib/theme.js'
 import { refreshStart, refreshSuccess, refreshFailure } from '../lib/refresh-state.js'
 import ChartControls from './chart-controls.jsx'
 import Legend from './legend.jsx'
@@ -120,7 +120,7 @@ const HydroChart = ({ config }) => {
 			},
 			axes: [
 				xAxisConfig(),
-				{ label: yLabel }
+				{ label: yLabel, stroke: axisStroke() }
 			],
 			series: [
 				{

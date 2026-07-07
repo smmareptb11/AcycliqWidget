@@ -13,11 +13,17 @@
 // Hauteur du canevas principal du graphe (px).
 export const CHART_HEIGHT = 300
 
-// Couleur des axes (remplace l'ancien '#666' — tokens --acq-text-muted).
-// Réglée pour un fond clair : le canevas ne suit pas prefers-color-scheme
-// (contrairement au « chrome » HTML). Un réglage sombre dédié (via matchMedia)
-// reste un suivi optionnel si la lisibilité des axes en dark pose problème.
-export const AXIS_STROKE = '#64748b'
+// Couleur des axes/libellés du canevas (le canevas ne peut pas lire les
+// variables CSS). Le gris clair par défaut d'uPlot devient illisible sur un
+// fond sombre : on choisit donc la teinte selon prefers-color-scheme, évaluée
+// à la (re)construction du graphe. Gris moyen lisible sur clair, gris clair
+// lisible sur sombre.
+export function axisStroke() {
+	const dark = typeof window !== 'undefined'
+		&& typeof window.matchMedia === 'function'
+		&& window.matchMedia('(prefers-color-scheme: dark)').matches
+	return dark ? '#94a3b8' : '#64748b'
+}
 
 // Couleur de repli d'un seuil sans htmlColor (tokens --acq-text-faint).
 export const THRESHOLD_FALLBACK = '#94a3b8'
