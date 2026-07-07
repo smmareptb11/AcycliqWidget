@@ -28,8 +28,19 @@
 	overflow: hidden;
 }
 
+/* marge = RANGER_OFFSET / 2 (100px dans use-chart.js) pour que le canevas du ranger tienne dans sa boîte */
 .chart-ranger {
-	margin: 0 75px;
+	margin: 0 50px;
+}
+
+/* touch-action: none neutralise le scroll/zoom natif pour laisser passer les Pointer Events du drag */
+.chart-ranger .u-over,
+.chart-ranger .u-select,
+.chart-ranger .u-grip-l,
+.chart-ranger .u-grip-r {
+	touch-action: none;
+	user-select: none;
+	-webkit-user-select: none;
 }
 
 .chart-ranger .u-select {
@@ -41,15 +52,40 @@
 .chart-ranger .u-grip-r {
 	position: absolute;
 	top: 0;
-	width: 10px;
+	width: 8px;
 	height: 100%;
 	background: rgba(255, 255, 255, 0.7);
 	border: 1px solid #666;
 	cursor: ew-resize;
 }
 
-.chart-ranger .u-grip-l { left: -5px; }
-.chart-ranger .u-grip-r { right: -5px; }
+/* Poignées placées juste à l'EXTÉRIEUR des bords de la sélection : elles ne
+   peuvent jamais se chevaucher, même quand la sélection est minuscule. */
+.chart-ranger .u-grip-l { right: 100%; }
+.chart-ranger .u-grip-r { left: 100%; }
+
+/* Zone tactile étendue vers l'extérieur uniquement (bornée au bord de la
+   sélection côté intérieur) → jamais de recouvrement entre les deux poignées. */
+.chart-ranger .u-grip-l::before,
+.chart-ranger .u-grip-r::before {
+	content: '';
+	position: absolute;
+	top: -10px;
+	bottom: -10px;
+}
+.chart-ranger .u-grip-l::before { left: -16px; right: 0; }
+.chart-ranger .u-grip-r::before { left: 0; right: -16px; }
+
+/* Cibles tactiles élargies (~44px) sur pointeurs grossiers (doigt). */
+@media (pointer: coarse) {
+	.chart-ranger .u-grip-l::before,
+	.chart-ranger .u-grip-r::before {
+		top: -16px;
+		bottom: -16px;
+	}
+	.chart-ranger .u-grip-l::before { left: -36px; }
+	.chart-ranger .u-grip-r::before { right: -36px; }
+}
 
 .acycliq-tooltip {
 	display: none;
