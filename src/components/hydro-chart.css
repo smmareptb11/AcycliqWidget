@@ -1,7 +1,10 @@
+/* Styles propres au widget hydro. Le chrome partagé (wrapper, ranger,
+   tooltip, états) vit désormais dans chart.css. */
+
 .acycliq-hydro {
 	width: 100%;
 	min-width: 0;
-	font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+	font-family: var(--acq-font);
 }
 
 .acycliq-header {
@@ -10,115 +13,14 @@
 
 .last-value {
 	font-size: 1.1rem;
-	font-weight: bold;
-	color: #333;
+	font-weight: var(--acq-fw-bold);
+	color: var(--acq-text);
+	font-variant-numeric: tabular-nums;
 }
 
 .last-date {
-	font-size: 0.85rem;
+	font-size: var(--acq-fs-sm);
 	font-weight: normal;
-	color: #666;
-}
-
-.chart-wrapper {
-	display: flex;
-	flex-direction: column;
-	width: 100%;
-	min-width: 0;
-	overflow: hidden;
-}
-
-/* marge = RANGER_OFFSET / 2 (100px dans use-chart.js) pour que le canevas du ranger tienne dans sa boîte */
-.chart-ranger {
-	margin: 0 50px;
-}
-
-/* touch-action: none neutralise le scroll/zoom natif pour laisser passer les Pointer Events du drag */
-.chart-ranger .u-over,
-.chart-ranger .u-select,
-.chart-ranger .u-grip-l,
-.chart-ranger .u-grip-r {
-	touch-action: none;
-	user-select: none;
-	-webkit-user-select: none;
-}
-
-.chart-ranger .u-select {
-	pointer-events: all;
-	cursor: grabbing;
-}
-
-.chart-ranger .u-grip-l,
-.chart-ranger .u-grip-r {
-	position: absolute;
-	top: 0;
-	width: 8px;
-	height: 100%;
-	background: rgba(255, 255, 255, 0.7);
-	border: 1px solid #666;
-	cursor: ew-resize;
-}
-
-/* Poignées placées juste à l'EXTÉRIEUR des bords de la sélection : elles ne
-   peuvent jamais se chevaucher, même quand la sélection est minuscule. */
-.chart-ranger .u-grip-l { right: 100%; }
-.chart-ranger .u-grip-r { left: 100%; }
-
-/* Zone tactile étendue vers l'extérieur uniquement (bornée au bord de la
-   sélection côté intérieur) → jamais de recouvrement entre les deux poignées. */
-.chart-ranger .u-grip-l::before,
-.chart-ranger .u-grip-r::before {
-	content: '';
-	position: absolute;
-	top: -10px;
-	bottom: -10px;
-}
-.chart-ranger .u-grip-l::before { left: -16px; right: 0; }
-.chart-ranger .u-grip-r::before { left: 0; right: -16px; }
-
-/* Cibles tactiles élargies (~44px) sur pointeurs grossiers (doigt). */
-@media (pointer: coarse) {
-	.chart-ranger .u-grip-l::before,
-	.chart-ranger .u-grip-r::before {
-		top: -16px;
-		bottom: -16px;
-	}
-	.chart-ranger .u-grip-l::before { left: -36px; }
-	.chart-ranger .u-grip-r::before { right: -36px; }
-}
-
-.acycliq-tooltip {
-	display: none;
-	position: fixed;
-	z-index: 9999;
-	background: rgba(0, 0, 0, 0.75);
-	color: #fff;
-	padding: 6px 10px;
-	border-radius: 4px;
-	font-size: 12px;
-	pointer-events: none;
-}
-
-.acycliq-tooltip .date {
-	margin-bottom: 0.25rem;
-}
-
-.acycliq-tooltip .value {
-	font-weight: bold;
-	white-space: nowrap;
-}
-
-.acycliq-loading,
-.acycliq-error,
-.acycliq-empty {
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	height: 200px;
-	font-family: system-ui, sans-serif;
-	color: #666;
-}
-
-.acycliq-error {
-	color: #c00;
+	color: var(--acq-text-muted);
+	font-variant-numeric: tabular-nums;
 }

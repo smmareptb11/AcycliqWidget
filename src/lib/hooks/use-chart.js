@@ -1,8 +1,9 @@
 import { useEffect, useRef, useCallback, useState, useMemo } from 'preact/hooks'
 import UPlot from 'uplot'
 import { shortDateTimeFormatter } from '../util/date.js'
+import { CHART_HEIGHT, axisStroke, RANGER_FILL_ALPHA } from '../theme.js'
 
-const DEFAULT_CHART_HEIGHT = 300
+const DEFAULT_CHART_HEIGHT = CHART_HEIGHT
 const DEFAULT_RANGER_HEIGHT = 28
 const RANGER_OFFSET = 100
 const MIN_WINDOW_S = 3600 // fenêtre temporelle minimale sélectionnable : 1h
@@ -10,19 +11,21 @@ const MIN_SEL_PX = 24 // largeur de rendu minimale de la sélection du ranger (g
 
 /**
  * Measure the available width of a container without being inflated
- * by its uPlot child canvas. Temporarily collapses the uPlot root
- * so offsetWidth reflects the parent constraint, not the canvas.
+ * by any uPlot canvas. Temporarily collapses every uPlot root passed
+ * in (the container's own chart AND the ranger, which is a sibling)
+ * so offsetWidth reflects the parent constraint, not the canvases.
+ *
+ * Collapsing the ranger too is essential on shrink : sinon son canevas
+ * garde l'ancêtre commun large, offsetWidth reste bloqué sur l'ancienne
+ * largeur et le graphe ne rétrécit jamais (débordement au redimensionnement).
  */
-function measureWidth(containerEl) {
-	const uWrap = containerEl.querySelector('.uplot')
-	if (uWrap) {
-		const prev = uWrap.style.width
-		uWrap.style.width = '0'
-		const w = containerEl.offsetWidth
-		uWrap.style.width = prev
-		return w || 400
-	}
-	return containerEl.offsetWidth || 400
+function measureWidth(containerEl, ...extraRoots) {
+	const roots = [containerEl.querySelector('.uplot'), ...extraRoots].filter(Boolean)
+	const restore = roots.map(el => [el, el.style.width])
+	roots.forEach(el => { el.style.width = '0' })
+	const w = containerEl.offsetWidth
+	restore.forEach(([el, prev]) => { el.style.width = prev })
+	return w || 400
 }
 
 /**
@@ -238,7 +241,7 @@ export function useChart({ plotData, hours, color, buildChartOpts, formatTooltip
 			height: DEFAULT_RANGER_HEIGHT,
 			axes: [{ show: false }, { show: false }],
 			scales: { x: { time: true } },
-			series: [{}, { stroke: color, width: 1, fill: color, fillAlpha: 0.1 }],
+			series: [{}, { stroke: color, width: 1, fill: color, fillAlpha: RANGER_FILL_ALPHA }],
 			cursor: { x: false, y: false, points: { show: false }, drag: { setScale: false, setSelect: true, x: true, y: false } },
 			legend: { show: false },
 			select: { show: true },
@@ -322,7 +325,9 @@ export function useChart({ plotData, hours, color, buildChartOpts, formatTooltip
 		// change de taille sans resize de fenêtre (iframe, rotation, layout tardif sur mobile).
 		const handleResize = () => {
 			if (!chartRef.current || !uPlotRef.current) return
-			const w = measureWidth(chartRef.current)
+			// Collapse the ranger canvas too, sinon il maintient l'ancêtre
+			// commun large et la mesure reste bloquée sur l'ancienne largeur.
+			const w = measureWidth(chartRef.current, uRangerRef.current?.root)
 			if (w <= 0) return
 			uPlotRef.current.setSize({ width: w, height: DEFAULT_CHART_HEIGHT })
 			uRangerRef.current?.setSize({ width: w - RANGER_OFFSET, height: DEFAULT_RANGER_HEIGHT })
@@ -370,7 +375,7 @@ export function useChart({ plotData, hours, color, buildChartOpts, formatTooltip
 
 export function xAxisConfig() {
 	return {
-		stroke: '#666',
+		stroke: axisStroke(),
 		grid: { show: false },
 		space: 70,
 		values: (u, vals) => vals.map(v => shortDateTimeFormatter(v * 1000))

@@ -13,7 +13,7 @@ function renderWidget(config) {
 		const result = validatePluvioConfig(config)
 		if (!result.valid) {
 			render(
-				<div style="padding:1rem; background:#fee; color:#900; font-family:sans-serif;">
+				<div className="acycliq-config-error">
 					<b>Erreur de configuration pluvio :</b><br />
 					<ul>{result.errors.map(e => <li key={e}>{e}</li>)}</ul>
 				</div>,
@@ -27,7 +27,7 @@ function renderWidget(config) {
 		const result = validateHydroConfig(config)
 		if (!result.valid) {
 			render(
-				<div style="padding:1rem; background:#fee; color:#900; font-family:sans-serif;">
+				<div className="acycliq-config-error">
 					<b>Erreur de configuration hydro :</b><br />
 					<ul>{result.errors.map(e => <li key={e}>{e}</li>)}</ul>
 				</div>,

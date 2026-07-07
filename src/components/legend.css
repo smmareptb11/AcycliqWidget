@@ -8,18 +8,40 @@
 
 .threshold-legend-item {
 	background: none;
-	border: none;
-	padding: 0.25rem;
+	border: 1px solid transparent;
+	padding: 0.2rem 0.45rem;
 	font: inherit;
-	font-size: 0.875rem;
+	font-size: var(--acq-fs-body);
+	font-variant-numeric: tabular-nums;
+	color: var(--acq-text);
 	cursor: pointer;
 	display: inline-flex;
 	align-items: center;
-	border-radius: 4px;
-	transition: opacity 0.2s ease-in-out;
-	opacity: 0.4;
+	gap: 6px;
+	border-radius: var(--acq-radius-sm);
+	transition: opacity 0.2s ease-in-out, background 0.2s ease-in-out;
 }
 
+.threshold-legend-item:hover {
+	background: var(--acq-surface-muted);
+}
+
+.threshold-legend-item:focus-visible {
+	outline: none;
+	box-shadow: var(--acq-focus-ring);
+}
+
+/* Actif : pleine opacité. Inactif : atténué + libellé barré pour signaler
+   l'état masqué au-delà de la seule opacité (affordance renforcée). */
 .threshold-legend-item.active {
 	opacity: 1;
+}
+
+.threshold-legend-item.inactive {
+	opacity: 0.55;
+	color: var(--acq-text-muted);
+}
+
+.threshold-legend-item.inactive .threshold-legend-label {
+	text-decoration: line-through;
 }

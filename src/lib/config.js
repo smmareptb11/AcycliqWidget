@@ -1,7 +1,7 @@
 const HYDRO_DEFAULTS = {
 	width: '100%',
 	height: '100%',
-	color: '#007BFF',
+	color: '#0284C7',
 	dataType: 4,
 	hours: 3,
 	ngf: true,
@@ -12,8 +12,8 @@ const HYDRO_DEFAULTS = {
 const PLUVIO_DEFAULTS = {
 	width: '100%',
 	height: '100%',
-	color: '#007BFF',
-	colorCumul: '#FF6B00',
+	color: '#0284C7',
+	colorCumul: '#EA580C',
 	hours: 3,
 	cumul: true,
 	groupFunc: 'all',
