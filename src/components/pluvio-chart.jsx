@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useState, useMemo } from 'preact/hooks'
 import UPlot from 'uplot'
 import 'uplot/dist/uPlot.min.css'
-import { fullDateTimeFormatter } from '../lib/util/date.js'
 import { formaterNombreFr } from '../lib/util/number.js'
 import { fetchPluvioStation, fetchPluvioMeasures } from '../lib/api.js'
 import { buildPluvioPlotData, computeWindowedCumul, pluvioBarLabel } from '../lib/data-transform.js'
-import { useChart, useDateRange, useAutoRefresh, xAxisConfig } from '../lib/hooks/use-chart.js'
+import { useChart, useDateRange, useAutoRefresh, xAxisConfig, tooltipBaseRows } from '../lib/hooks/use-chart.js'
 import { CHART_HEIGHT, FILL_ALPHA_SUFFIX, axisStroke } from '../lib/theme.js'
 import { refreshStart, refreshSuccess, refreshFailure } from '../lib/refresh-state.js'
 import ChartControls from './chart-controls.jsx'
@@ -124,10 +123,7 @@ const PluvioChart = ({ config }) => {
 		color,
 		buildChartOpts: (chartWidth, initMin, initMax) => {
 			const series = [
-				{
-					label: 'Date',
-					value: (u, raw) => raw ? fullDateTimeFormatter(new Date(raw * 1000)) : '-'
-				},
+				{ label: 'Date' },
 				{
 					label: barLabel,
 					stroke: color,
@@ -135,8 +131,7 @@ const PluvioChart = ({ config }) => {
 					width: 1,
 					paths: barSize,
 					points: { show: false },
-					spanGaps: true,
-					value: (u, v) => (v != null && !isNaN(v)) ? `${formaterNombreFr(v)} mm` : '-'
+					spanGaps: true
 				}
 			]
 
@@ -159,8 +154,7 @@ const PluvioChart = ({ config }) => {
 					width: 2,
 					scale: 'cumul',
 					spanGaps: true,
-					points: { show: false },
-					value: (u, v) => (v != null && !isNaN(v)) ? `${formaterNombreFr(v)} mm` : '-'
+					points: { show: false }
 				})
 
 				axes.push({
@@ -183,10 +177,7 @@ const PluvioChart = ({ config }) => {
 			const yVal = u.data[1][idx]
 			if (xVal == null || yVal == null) return null
 
-			let html = `
-				<div class="date">${fullDateTimeFormatter(new Date(xVal * 1000))}</div>
-				<div class="value">${formaterNombreFr(yVal)} mm</div>
-			`
+			let html = tooltipBaseRows(xVal, yVal, 'mm')
 
 			if (cumul && u.data[2]) {
 				const cumulVal = u.data[2][idx]

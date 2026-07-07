@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { toNgf } from '../../src/lib/ngf.js'
+import { toNgf, shouldApplyNgf } from '../../src/lib/ngf.js'
 
 describe('toNgf', () => {
 	it('adds value and altitude', () => {
@@ -25,5 +25,23 @@ describe('toNgf', () => {
 
 	it('handles negative values', () => {
 		expect(toNgf(-0.5, 100)).toBeCloseTo(99.5, 3)
+	})
+})
+
+describe('shouldApplyNgf', () => {
+	it('active le NGF pour une hauteur avec altitude connue', () => {
+		expect(shouldApplyNgf(true, true, 100)).toBe(true)
+	})
+
+	it('reste inactif quand l\'option NGF est désactivée', () => {
+		expect(shouldApplyNgf(false, true, 100)).toBe(false)
+	})
+
+	it('reste inactif pour une donnée non-hauteur (débit)', () => {
+		expect(shouldApplyNgf(true, false, 100)).toBe(false)
+	})
+
+	it('reste inactif sans altitude exploitable', () => {
+		expect(shouldApplyNgf(true, true, 0)).toBe(false)
 	})
 })

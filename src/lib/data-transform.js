@@ -1,12 +1,27 @@
-import { toNgf } from './ngf.js'
+import { toNgf, shouldApplyNgf } from './ngf.js'
 
-export function buildHydroPlotData(measures, altitude, useNgf, isHeight, thresholds) {
+/**
+ * Prépare les mesures brutes pour uPlot : rejette une entrée absente/non-tableau,
+ * trie par timestamp croissant et extrait l'axe x en secondes (l'API renvoie des
+ * millisecondes). Garde et prétraitement partagés par les deux constructeurs.
+ *
+ * @param {Array<[number, number|null]>} measures
+ * @returns {{ sorted: Array, xVals: number[] } | null}
+ */
+function prepareMeasures(measures) {
 	if (!measures || !Array.isArray(measures)) return null
-
-	const applyNgf = useNgf && isHeight && altitude > 0
-
 	const sorted = [...measures].sort((a, b) => a[0] - b[0])
 	const xVals = sorted.map(d => d[0] / 1000)
+	return { sorted, xVals }
+}
+
+export function buildHydroPlotData(measures, altitude, useNgf, isHeight, thresholds) {
+	const prepared = prepareMeasures(measures)
+	if (!prepared) return null
+	const { sorted, xVals } = prepared
+
+	const applyNgf = shouldApplyNgf(useNgf, isHeight, altitude)
+
 	const yVals = sorted.map(d => {
 		const val = d[1]
 		if (val == null) return null
@@ -51,10 +66,10 @@ export function pluvioBarLabel(groupFunc) {
 }
 
 export function buildPluvioPlotData(measures) {
-	if (!measures || !Array.isArray(measures)) return null
+	const prepared = prepareMeasures(measures)
+	if (!prepared) return null
+	const { sorted, xVals } = prepared
 
-	const sorted = [...measures].sort((a, b) => a[0] - b[0])
-	const xVals = sorted.map(d => d[0] / 1000)
 	const yVals = sorted.map(d => {
 		const val = d[1]
 		return val != null && Number.isFinite(val) ? Number(val.toFixed(2)) : null
