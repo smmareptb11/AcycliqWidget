@@ -1,7 +1,7 @@
 {
   "name": "acycliq-widget",
   "description": "Widget graphique pour la visualisation des données hydrométriques et pluviométriques de l'API Acycliq.",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "files": [
     "dist"
   ],
