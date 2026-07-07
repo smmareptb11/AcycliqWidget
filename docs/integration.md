@@ -71,7 +71,7 @@ npm install acycliq-widget
 | `idStation` | oui | number | — | Identifiant de la station hydrologique |
 | `width` | non | string | `'100%'` | Largeur de l'iframe |
 | `height` | non | string | `'100%'` | Hauteur de l'iframe |
-| `color` | non | string | `'#007BFF'` | Couleur principale du graphique |
+| `color` | non | string | `'#0284C7'` | Couleur principale du graphique |
 | `dataType` | non | number | `4` | Type de données : `4` (hauteur) ou `5` (débit) |
 | `startDate` | non | string | Now - 30j | Date de début (ISO 8601) |
 | `endDate` | non | string | Now | Date de fin (ISO 8601) |
@@ -93,8 +93,8 @@ npm install acycliq-widget
 | `idStation` | oui | number | — | Identifiant de la station pluviométrique |
 | `width` | non | string | `'100%'` | Largeur de l'iframe |
 | `height` | non | string | `'100%'` | Hauteur de l'iframe |
-| `color` | non | string | `'#007BFF'` | Couleur des barres de pluviométrie |
-| `colorCumul` | non | string | `'#FF6B00'` | Couleur de la courbe de cumul de pluie |
+| `color` | non | string | `'#0284C7'` | Couleur des barres de pluviométrie |
+| `colorCumul` | non | string | `'#EA580C'` | Couleur de la courbe de cumul de pluie |
 | `startDate` | non | string | Now - 30j | Date de début (ISO 8601) |
 | `endDate` | non | string | Now | Date de fin (ISO 8601) |
 | `hours` | non | number | `3` | Amplitude initiale de la fenêtre visible (en heures) |

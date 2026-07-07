@@ -5,25 +5,49 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Acycliq Widget – Configuration personnalisée</title>
   <style>
+    /* Palette du playground — miroir des tokens --acq-* du widget
+       (src/index.css). Fichier statique : les valeurs sont dupliquées ici. */
+    :root {
+      --acq-primary: #0284C7;
+      --acq-primary-hover: #0369A1;
+      --acq-bg: #f8fafc;
+      --acq-surface: #ffffff;
+      --acq-surface-muted: #f1f5f9;
+      --acq-border: #e2e8f0;
+      --acq-text: #1e293b;
+      --acq-text-muted: #64748b;
+      --acq-code-bg: #0f172a;
+      --acq-code-fg: #e2e8f0;
+      --acq-font: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --acq-radius-sm: 4px;
+      --acq-radius: 6px;
+      --acq-focus-ring: 0 0 0 3px rgba(2, 132, 199, 0.35);
+    }
+
     body {
-      font-family: system-ui, sans-serif;
+      font-family: var(--acq-font);
       margin: 0;
       padding: 2rem;
-      background-color: #f9fafb;
-      color: #333;
+      background-color: var(--acq-bg);
+      color: var(--acq-text);
     }
 
     h1 {
-      font-size: 1.8rem;
+      font-size: 1.6rem;
+      font-weight: 650;
       margin-bottom: 1rem;
-      color: #0f172a;
+      color: var(--acq-text);
+      letter-spacing: -0.01em;
     }
 
     h2 {
-      font-size: 1.2rem;
+      font-size: 1.05rem;
+      font-weight: 650;
       margin-top: 2rem;
       margin-bottom: 0.5rem;
-      color: #1e293b;
+      padding-bottom: 0.35rem;
+      border-bottom: 1px solid var(--acq-border);
+      color: var(--acq-text);
     }
 
     .section {
@@ -37,8 +61,8 @@
       display: flex;
       flex-direction: column;
       gap: 0.3rem;
-      font-size: 0.9rem;
-      color: #334155;
+      font-size: 0.85rem;
+      color: var(--acq-text-muted);
     }
 
     input[type="text"],
@@ -46,10 +70,11 @@
     input[type="color"],
     select {
       padding: 0.5rem;
-      border: 1px solid #cbd5e1;
-      border-radius: 0.5rem;
-      background: white;
-      font-size: 0.95rem;
+      border: 1px solid var(--acq-border);
+      border-radius: var(--acq-radius);
+      background: var(--acq-surface);
+      color: var(--acq-text);
+      font-size: 0.9rem;
       transition: border-color 0.2s, box-shadow 0.2s;
     }
 
@@ -57,7 +82,7 @@
       -webkit-appearance: none;
       -moz-appearance: none;
       appearance: none;
-      background: white url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23333' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 0.75rem center;
+      background: var(--acq-surface) url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 0.75rem center;
       background-size: 0.75rem;
     }
 
@@ -71,31 +96,36 @@
       cursor: pointer;
     }
     input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
-    input[type="color"]::-webkit-color-swatch { border: none; border-radius: 0.5rem; }
+    input[type="color"]::-webkit-color-swatch { border: 1px solid var(--acq-border); border-radius: var(--acq-radius); }
 
     input:focus,
     select:focus {
-      border-color: #2563eb;
+      border-color: var(--acq-primary);
       outline: none;
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+      box-shadow: var(--acq-focus-ring);
     }
 
     button {
       display: block;
       width: 100%;
-      padding: 0.75rem;
-      background-color: #2563eb;
+      padding: 0.7rem;
+      background-color: var(--acq-primary);
       color: white;
-      font-size: 1rem;
-      font-weight: 600;
+      font-size: 0.95rem;
+      font-weight: 650;
       border: none;
-      border-radius: 0.5rem;
+      border-radius: var(--acq-radius);
       cursor: pointer;
-      transition: background-color 0.3s ease;
+      transition: background-color 0.2s ease;
       margin-top: 1rem;
     }
 
-    button:hover { background-color: #1d4ed8; }
+    button:hover { background-color: var(--acq-primary-hover); }
+
+    button:focus-visible {
+      outline: none;
+      box-shadow: var(--acq-focus-ring);
+    }
 
     .button-group {
       display: flex;
@@ -135,20 +165,22 @@
     }
 
     .widget-preview {
-      border: 2px solid #e2e8f0;
-      border-radius: 0.75rem;
-      background: white;
+      border: 1px solid var(--acq-border);
+      border-radius: var(--acq-radius);
+      background: var(--acq-surface);
+      padding: 1rem;
       min-height: 400px;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
     }
 
     .hidden { display: none !important; }
 
     .code-block {
-      background: #1e293b;
-      color: #e2e8f0;
+      background: var(--acq-code-bg);
+      color: var(--acq-code-fg);
       padding: 1rem;
-      border-radius: 0.5rem;
-      font-family: 'Fira Code', 'Cascadia Code', monospace;
+      border-radius: var(--acq-radius);
+      font-family: 'Fira Code', 'Cascadia Code', ui-monospace, SFMono-Regular, Menlo, monospace;
       font-size: 0.85rem;
       overflow-x: auto;
       white-space: pre;
@@ -162,12 +194,13 @@
       right: 0.5rem;
       padding: 0.3rem 0.6rem;
       font-size: 0.8rem;
-      background: #475569;
+      background: #334155;
+      border-radius: var(--acq-radius-sm);
       margin: 0;
       width: auto;
     }
 
-    .code-block button:hover { background: #64748b; }
+    .code-block button:hover { background: #475569; }
   </style>
 </head>
 <body>
@@ -217,7 +250,7 @@
     <div class="section">
       <label>
         Couleur
-        <input type="color" name="color" value="#007BFF" />
+        <input type="color" name="color" value="#0284C7" />
       </label>
       <label>
         Fenêtre initiale (heures)
@@ -256,7 +289,7 @@
       </label>
       <label>
         Couleur du cumul
-        <input type="color" name="colorCumul" value="#FF6B00" />
+        <input type="color" name="colorCumul" value="#EA580C" />
       </label>
       <label>
         Agrégation (groupFunc)
@@ -364,7 +397,7 @@
 
       // Les <input type="color"> renvoient toujours un hex minuscule : on
       // compare sans tenir compte de la casse pour omettre les valeurs par défaut.
-      if ((embedConfig.color || '').toUpperCase() === '#007BFF') delete embedConfig.color;
+      if ((embedConfig.color || '').toUpperCase() === '#0284C7') delete embedConfig.color;
       if (embedConfig.hours === 3) delete embedConfig.hours;
       if (embedConfig.refresh === 5) delete embedConfig.refresh;
       if (type === 'hydro') {
@@ -374,7 +407,7 @@
       }
       if (type === 'pluvio') {
         if (embedConfig.cumul === true) delete embedConfig.cumul;
-        if ((embedConfig.colorCumul || '').toUpperCase() === '#FF6B00') delete embedConfig.colorCumul;
+        if ((embedConfig.colorCumul || '').toUpperCase() === '#EA580C') delete embedConfig.colorCumul;
         if (embedConfig.groupFunc === 'all') delete embedConfig.groupFunc;
       }
 

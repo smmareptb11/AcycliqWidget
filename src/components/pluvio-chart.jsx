@@ -52,7 +52,7 @@ function recomputeCumulScale(u, minX, maxX) {
 const PluvioChart = ({ config }) => {
 	const [state, setState] = useState({ loading: true, error: null, refreshing: false, refreshError: null, measures: null, stationInfo: null })
 
-	const { apiUrl, token, idStation, color = '#007BFF', colorCumul = '#FF6B00', hours = 3, cumul = true, groupFunc = 'all', refresh = 5, startDate, endDate } = config
+	const { apiUrl, token, idStation, color = '#0284C7', colorCumul = '#EA580C', hours = 3, cumul = true, groupFunc = 'all', refresh = 5, startDate, endDate } = config
 
 	// SUM_DAY aggregates rainfall per day; the other modes keep the hourly
 	// cadence. The bars label must reflect the chosen aggregation.

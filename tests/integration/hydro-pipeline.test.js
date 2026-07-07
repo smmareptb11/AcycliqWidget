@@ -41,7 +41,7 @@ describe('hydro pipeline: config → transform → données uPlot', () => {
 		expect(valid).toBe(true)
 
 		const config = applyHydroDefaults(userConfig)
-		expect(config.color).toBe('#007BFF')
+		expect(config.color).toBe('#0284C7')
 		expect(config.refresh).toBe(5)
 	})
 

@@ -18,7 +18,7 @@ const HydroChart = ({ config }) => {
 	const [state, setState] = useState({ loading: true, error: null, refreshing: false, refreshError: null, measures: null, thresholds: [], stationInfo: null })
 	const [seriesVisibility, setSeriesVisibility] = useState(new Map())
 
-	const { apiUrl, token, idStation, color = '#007BFF', dataType = 4, hours = 3, ngf: useNgf = true, threshold: showThresholds = true, refresh = 5, startDate, endDate } = config
+	const { apiUrl, token, idStation, color = '#0284C7', dataType = 4, hours = 3, ngf: useNgf = true, threshold: showThresholds = true, refresh = 5, startDate, endDate } = config
 
 	const isHeight = dataType === 4
 	const unit = isHeight ? 'm' : 'm³/s'

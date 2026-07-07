@@ -29,7 +29,7 @@ describe('pluvio pipeline: config → transform → données uPlot', () => {
 		expect(config.hours).toBe(3)
 		expect(config.cumul).toBe(true)
 		expect(config.groupFunc).toBe('all')
-		expect(config.colorCumul).toBe('#FF6B00')
+		expect(config.colorCumul).toBe('#EA580C')
 	})
 
 	it('produit des données uPlot [x, y] à partir de la réponse API', () => {
