@@ -17,17 +17,18 @@ import './pluvio-chart.css'
 const barSize = UPlot.paths.bars({ size: [0.8], align: 1 })
 
 /**
- * Range function for uPlot scales that should always start at 0 and never
- * collapse when the visible window contains no data. Used as the `range`
- * config on both the rainfall (`y`) and cumul scales so that uPlot honors
- * our explicit `setScale(min, max)` calls instead of auto-overriding them.
+ * Fonction de plage (range) pour les échelles uPlot qui doivent toujours démarrer
+ * à 0 et ne jamais s'effondrer quand la fenêtre visible ne contient aucune donnée.
+ * Utilisée comme config `range` sur les échelles pluie (`y`) et cumul, pour qu'uPlot
+ * respecte nos appels explicites `setScale(min, max)` au lieu de les écraser
+ * automatiquement.
  */
 const nonNegativeAutoRange = (_u, dataMin, dataMax) => {
 	if (dataMin == null || !Number.isFinite(dataMax)) return [0, 1]
 	return [0, Math.max(dataMax, 1)]
 }
 
-/** Recompute the rainfall (bars) y scale to fit values in the visible window. */
+/** Recalcule l'échelle y de la pluie (barres) pour s'ajuster aux valeurs de la fenêtre visible. */
 function recomputeYScale(u, minX, maxX) {
 	const xVals = u.data[0]
 	const yVals = u.data[1]
@@ -40,7 +41,7 @@ function recomputeYScale(u, minX, maxX) {
 	u.setScale('y', { min: 0, max: yMax > 0 ? yMax * 1.1 : 1 })
 }
 
-/** Recompute the windowed cumul series and update its scale to match. */
+/** Recalcule la série de cumul fenêtrée et met à jour son échelle en conséquence. */
 function recomputeCumulScale(u, minX, maxX) {
 	const xVals = u.data[0]
 	const yVals = u.data[1]
@@ -54,16 +55,17 @@ const PluvioChart = ({ config }) => {
 
 	const { apiUrl, token, idStation, color = '#0284C7', colorCumul = '#EA580C', hours = 3, cumul = true, groupFunc = 'all', refresh = 5, startDate, endDate } = config
 
-	// SUM_DAY aggregates rainfall per day; the other modes keep the hourly
-	// cadence. The bars label must reflect the chosen aggregation.
+	// SUM_DAY agrège la pluie par jour ; les autres modes gardent la cadence
+	// horaire. Le libellé des barres doit refléter l'agrégation choisie.
 	const barLabel = pluvioBarLabel(groupFunc)
 
 	const { startMs, getEndMs } = useDateRange(startDate, endDate)
 
-	// Station metadata is quasi-immutable: fetched once per (station), never
-	// on the refresh interval — same split as the hydro widget. It only feeds
-	// the display title, so a failure must not take down the (working) chart:
-	// we log it and fall back to the station identifier as the title.
+	// Les métadonnées de station sont quasi-immuables : récupérées une fois par
+	// (station), jamais sur l'intervalle de rafraîchissement — même séparation que
+	// le widget hydro. Elles n'alimentent que le titre affiché, donc un échec ne
+	// doit pas faire tomber le graphe (fonctionnel) : on le journalise et on
+	// retombe sur l'identifiant de la station comme titre.
 	useEffect(() => {
 		let cancelled = false
 		fetchPluvioStation(apiUrl, token, idStation)
@@ -103,15 +105,15 @@ const PluvioChart = ({ config }) => {
 		const base = buildPluvioPlotData(state.measures)
 		if (!base) return null
 		if (!cumul) return base
-		// Placeholder for the cumul series; filled dynamically by onScaleChange
-		// based on the currently visible x-range.
+		// Emplacement réservé pour la série de cumul ; rempli dynamiquement par
+		// onScaleChange selon la plage x actuellement visible.
 		return [base[0], base[1], new Array(base[0].length).fill(null)]
 	}, [state.measures, cumul])
 
 	const handleScaleChange = useCallback((u, minX, maxX) => {
-		// Both scales must be re-derived from the visible window: uPlot's
-		// auto-ranging would otherwise leave them stuck on values inherited
-		// from a previous (wider) zoom.
+		// Les deux échelles doivent être redérivées de la fenêtre visible :
+		// sinon l'auto-ranging d'uPlot les laisserait bloquées sur des valeurs
+		// héritées d'un zoom précédent (plus large).
 		recomputeYScale(u, minX, maxX)
 		if (cumul) recomputeCumulScale(u, minX, maxX)
 	}, [cumul])
@@ -145,8 +147,8 @@ const PluvioChart = ({ config }) => {
 
 			const scales = {
 				x: { time: true, min: initMin, max: initMax },
-				// `range` makes uPlot honor explicit setScale calls from
-				// handleScaleChange (auto:true would override them).
+				// `range` fait qu'uPlot respecte les appels setScale explicites de
+				// handleScaleChange (auto:true les écraserait).
 				y: { dir: -1, range: nonNegativeAutoRange }
 			}
 
@@ -169,8 +171,8 @@ const PluvioChart = ({ config }) => {
 					grid: { show: false }
 				})
 
-				// Same `range` strategy as the y scale: needed so that
-				// recomputeCumulScale's explicit setScale calls stick.
+				// Même stratégie `range` que l'échelle y : nécessaire pour que les
+				// appels setScale explicites de recomputeCumulScale soient conservés.
 				scales.cumul = { range: nonNegativeAutoRange }
 			}
 

@@ -10,12 +10,13 @@ const MIN_WINDOW_S = 3600 // fenêtre temporelle minimale sélectionnable : 1h
 const MIN_SEL_PX = 24 // largeur de rendu minimale de la sélection du ranger (garde 1h visible + poignées séparées)
 
 /**
- * Measure the available width of a container without being inflated
- * by any uPlot canvas. Temporarily collapses every uPlot root passed
- * in (the container's own chart AND the ranger, which is a sibling)
- * so offsetWidth reflects the parent constraint, not the canvases.
+ * Mesure la largeur disponible d'un conteneur sans qu'elle soit gonflée
+ * par un canevas uPlot. Réduit temporairement à zéro le graphe du conteneur
+ * (retrouvé dans le DOM) et toute racine supplémentaire passée en argument
+ * (le ranger, qui est un frère) pour que offsetWidth reflète la contrainte
+ * du parent, pas les canevas.
  *
- * Collapsing the ranger too is essential on shrink : sinon son canevas
+ * Réduire le ranger aussi est essentiel au rétrécissement : sinon son canevas
  * garde l'ancêtre commun large, offsetWidth reste bloqué sur l'ancienne
  * largeur et le graphe ne rétrécit jamais (débordement au redimensionnement).
  */
@@ -112,17 +113,17 @@ export function useAutoRefresh(loadData, refreshMinutes) {
 }
 
 /**
- * Shared chart hook: handles uPlot + ranger lifecycle, tooltip, resize, zoom, export.
+ * Hook de graphe partagé : gère le cycle de vie uPlot + ranger, l'infobulle, le redimensionnement, le zoom, l'export.
  *
  * @param {object} opts
- * @param {Array} opts.plotData - uPlot data arrays [xVals, yVals, ...]
- * @param {number} opts.hours - initial visible window in hours
- * @param {string} opts.color - primary series color (used for ranger)
+ * @param {Array} opts.plotData - tableaux de données uPlot [xVals, yVals, ...]
+ * @param {number} opts.hours - fenêtre visible initiale en heures
+ * @param {string} opts.color - couleur de la série principale (utilisée pour le ranger)
  * @param {Function} opts.buildChartOpts - (chartWidth, initMin, initMax) => { width, height, scales, axes, series }
- * @param {Function} opts.formatTooltip - (uPlot, idx) => HTML string or null
- * @param {string} opts.exportPrefix - filename prefix for PNG export
- * @param {Function} [opts.onChartReady] - called with uPlot instance after creation
- * @param {Function} [opts.onScaleChange] - (u, min, max) called whenever x-scale changes (init, zoom, ranger drag)
+ * @param {Function} opts.formatTooltip - (uPlot, idx) => chaîne HTML ou null
+ * @param {string} opts.exportPrefix - préfixe de nom de fichier pour l'export PNG
+ * @param {Function} [opts.onChartReady] - appelé avec l'instance uPlot après création
+ * @param {Function} [opts.onScaleChange] - (u, min, max) appelé à chaque changement d'échelle x (init, zoom, drag du ranger)
  */
 export function useChart({ plotData, hours, color, buildChartOpts, formatTooltip, exportPrefix, onChartReady, onScaleChange }) {
 	const chartRef = useRef(null)
@@ -149,13 +150,13 @@ export function useChart({ plotData, hours, color, buildChartOpts, formatTooltip
 		const initMax = xVals[xVals.length - 1]
 		const initMin = initMax - hoursS
 
-		// Destroy previous
+		// Détruit les instances précédentes (graphe + ranger)
 		if (uPlotRef.current) { uPlotRef.current.destroy(); uPlotRef.current = null }
 		if (uRangerRef.current) { uRangerRef.current.destroy(); uRangerRef.current = null }
 
 		const chartWidth = measureWidth(chartRef.current)
 
-		// Build chart-specific options, then merge shared config
+		// Construit les options spécifiques au graphe, puis fusionne la config partagée
 		const specificOpts = buildOptsRef.current(chartWidth, initMin, initMax)
 		const opts = {
 			...specificOpts,
@@ -178,10 +179,10 @@ export function useChart({ plotData, hours, color, buildChartOpts, formatTooltip
 						if (key !== 'x') return
 						if (reentryGuardRef.current) return
 						if (!onScaleChangeRef.current) return
-						// Defer: uPlot may not yet have committed the new scale
-						// when this hook fires, and any nested setScale/setData
-						// calls would race against the outer scale update.
-						// queueMicrotask runs after the current setScale completes.
+						// Différé : uPlot n'a peut-être pas encore validé la nouvelle échelle
+						// quand ce hook se déclenche, et tout appel setScale/setData
+						// imbriqué entrerait en concurrence avec la mise à jour d'échelle externe.
+						// queueMicrotask s'exécute après la fin du setScale courant.
 						const cb = onScaleChangeRef.current
 						queueMicrotask(() => {
 							if (reentryGuardRef.current) return
@@ -325,7 +326,7 @@ export function useChart({ plotData, hours, color, buildChartOpts, formatTooltip
 		// change de taille sans resize de fenêtre (iframe, rotation, layout tardif sur mobile).
 		const handleResize = () => {
 			if (!chartRef.current || !uPlotRef.current) return
-			// Collapse the ranger canvas too, sinon il maintient l'ancêtre
+			// Réduit le canevas du ranger aussi, sinon il maintient l'ancêtre
 			// commun large et la mesure reste bloquée sur l'ancienne largeur.
 			const w = measureWidth(chartRef.current, uRangerRef.current?.root)
 			if (w <= 0) return

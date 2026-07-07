@@ -25,10 +25,10 @@ const HydroChart = ({ config }) => {
 
 	const { startMs, getEndMs } = useDateRange(startDate, endDate)
 
-	// Station metadata and thresholds are quasi-immutable and are fetched
-	// exactly once per (station, dataType, showThresholds) combination —
-	// never on the auto-refresh interval. This cuts the refresh traffic
-	// from 3 calls down to 1 (measures only).
+	// Les métadonnées de station et les seuils sont quasi-immuables et sont
+	// récupérés exactement une fois par combinaison (station, dataType,
+	// showThresholds) — jamais sur l'intervalle de rafraîchissement automatique.
+	// Cela réduit le trafic de rafraîchissement de 3 appels à 1 (mesures seules).
 	useEffect(() => {
 		let cancelled = false
 		async function loadMeta() {
@@ -52,7 +52,7 @@ const HydroChart = ({ config }) => {
 		return () => { cancelled = true }
 	}, [apiUrl, token, idStation, dataType, showThresholds])
 
-	// Measures are the only piece rebuilt on the refresh interval.
+	// Les mesures sont la seule partie reconstruite sur l'intervalle de rafraîchissement.
 	const loadMeasures = useCallback(async () => {
 		setState(refreshStart)
 		try {
@@ -81,10 +81,10 @@ const HydroChart = ({ config }) => {
 		: 'Débit (m³/s)'
 	const thresholdUnit = applyNgf ? 'm NGF' : unit
 
-	// When NGF is active, thresholds must be shifted by the station altitude
-	// just like the measure curve — otherwise the seuil lines and their
-	// displayed values wouldn't line up with the plotted heights. Computed
-	// once here and reused for the plot data, the series and the legend.
+	// Quand le NGF est actif, les seuils doivent être décalés de l'altitude de la
+	// station, tout comme la courbe de mesure — sinon les lignes de seuil et leurs
+	// valeurs affichées ne s'aligneraient pas avec les hauteurs tracées. Calculés
+	// une fois ici et réutilisés pour les données du graphe, les séries et la légende.
 	const displayThresholds = useMemo(
 		() => applyThresholdsNgf(state.thresholds, altitude, applyNgf),
 		[state.thresholds, altitude, applyNgf]
