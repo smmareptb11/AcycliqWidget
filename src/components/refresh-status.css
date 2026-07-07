@@ -1,0 +1,75 @@
+/* Spinner affiché pendant un rafraîchissement des mesures. */
+.refresh-spinner {
+	display: inline-block;
+	width: 14px;
+	height: 14px;
+	border: 2px solid rgba(0, 123, 255, 0.25);
+	border-top-color: #007BFF;
+	border-radius: 50%;
+	animation: acycliq-spin 0.7s linear infinite;
+	vertical-align: middle;
+}
+
+@keyframes acycliq-spin {
+	to { transform: rotate(360deg); }
+}
+
+/* Conteneur du triangle d'alerte + son tooltip personnalisé. */
+.refresh-status {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+}
+
+/* Triangle d'alerte cliquable quand le dernier rafraîchissement a échoué.
+   Le triangle est obtenu par clip-path ; le « ! » est aligné vers le bas
+   (partie la plus large du triangle). */
+.refresh-warning {
+	display: inline-flex;
+	align-items: flex-end;
+	justify-content: center;
+	width: 18px;
+	height: 16px;
+	padding: 0 0 1px;
+	font-family: inherit;
+	font-size: 9px;
+	font-weight: bold;
+	line-height: 1;
+	color: #fff;
+	background: #d97706;
+	border: none;
+	clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+	cursor: pointer;
+}
+
+.refresh-warning:hover,
+.refresh-warning:focus-visible {
+	background: #b45309;
+}
+
+/* Tooltip personnalisé : s'affiche instantanément au survol (contrairement au
+   title natif, temporisé par le navigateur). Positionné sous l'icône pour ne
+   pas être rogné par le bord haut de l'iframe. */
+.refresh-tooltip {
+	position: absolute;
+	top: calc(100% + 6px);
+	left: 0;
+	z-index: 10000;
+	display: none;
+	width: max-content;
+	max-width: 240px;
+	padding: 6px 10px;
+	background: rgba(0, 0, 0, 0.85);
+	color: #fff;
+	font-size: 12px;
+	font-weight: normal;
+	line-height: 1.35;
+	border-radius: 4px;
+	white-space: normal;
+	pointer-events: none;
+}
+
+.refresh-status:hover .refresh-tooltip,
+.refresh-status:focus-within .refresh-tooltip {
+	display: block;
+}
