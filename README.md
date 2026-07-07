@@ -18,7 +18,7 @@ Développé pour le [SMMAR](https://www.smmar.fr) (Syndicat Mixte des Milieux Aq
 - **Widget Pluviométrique** : visualisation des cumuls pluviométriques avec courbe cumulative optionnelle
 - **Interactif** : zoom temporel (1h à 24h), frise chronologique avec sélection par glisser, export PNG
 - **Embarquable** : intégration simple via une balise `<script>`, compatible avec tout site web
-- **Temps réel** : rafraîchissement automatique configurable
+- **Temps réel** : rafraîchissement automatique configurable, avec indicateur d'état (spinner / triangle d'alerte cliquable) et conservation du graphique en cas d'échec transitoire
 
 ## Démarrage rapide
 

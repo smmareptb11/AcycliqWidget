@@ -105,6 +105,22 @@ npm install acycliq-widget
 
 > Le nom de la station est affiché en titre au-dessus du graphique (récupéré via l'API).
 
+## Rafraîchissement des données
+
+Lorsque le paramètre `refresh` est renseigné (5 minutes par défaut), le graphique
+recharge ses mesures à cet intervalle. Un indicateur d'état est affiché à côté du
+nom de la station :
+
+- **Rien** : le dernier rafraîchissement a réussi.
+- **Spinner** : un rafraîchissement est en cours.
+- **Triangle d'alerte** : le dernier rafraîchissement a échoué. Son survol indique
+  la date et l'heure de l'échec ; un **clic force un nouveau rafraîchissement**.
+
+Un échec transitoire (API momentanément indisponible) **ne détruit pas** le
+graphique déjà affiché : les dernières données valides restent visibles et seul
+le triangle d'alerte signale le problème. L'écran d'erreur plein cadre n'apparaît
+que si le **tout premier** chargement échoue (aucune donnée à afficher).
+
 ## Multi-instances
 
 Vous pouvez afficher plusieurs widgets sur la même page :
