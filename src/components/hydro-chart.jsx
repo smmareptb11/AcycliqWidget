@@ -4,7 +4,8 @@ import { fullDateTimeFormatter } from '../lib/util/date.js'
 import { formaterNombreFr } from '../lib/util/number.js'
 import { fetchHydroStation, fetchHydroMeasures, fetchHydroThresholds } from '../lib/api.js'
 import { buildHydroPlotData, applyThresholdsNgf } from '../lib/data-transform.js'
-import { useChart, useDateRange, useAutoRefresh, xAxisConfig } from '../lib/hooks/use-chart.js'
+import { shouldApplyNgf } from '../lib/ngf.js'
+import { useChart, useDateRange, useAutoRefresh, xAxisConfig, tooltipBaseRows } from '../lib/hooks/use-chart.js'
 import { CHART_HEIGHT, THRESHOLD_FALLBACK, axisStroke } from '../lib/theme.js'
 import { refreshStart, refreshSuccess, refreshFailure } from '../lib/refresh-state.js'
 import ChartControls from './chart-controls.jsx'
@@ -73,9 +74,8 @@ const HydroChart = ({ config }) => {
 
 	useAutoRefresh(loadMeasures, refresh)
 
-	const altSystems = state.stationInfo?.link_altimetrySystems || []
-	const altitude = altSystems.length > 0 ? altSystems[0].altitude || 0 : 0
-	const applyNgf = useNgf && isHeight && altitude > 0
+	const altitude = state.stationInfo?.link_altimetrySystems?.[0]?.altitude || 0
+	const applyNgf = shouldApplyNgf(useNgf, isHeight, altitude)
 	const yLabel = isHeight
 		? (applyNgf ? 'Hauteur (m NGF)' : 'Hauteur (m)')
 		: 'Débit (m³/s)'
@@ -101,7 +101,6 @@ const HydroChart = ({ config }) => {
 			stroke: th.htmlColor || THRESHOLD_FALLBACK,
 			width: 2,
 			dash: [8, 4],
-			value: () => `${th.name} (${formaterNombreFr(th.value)} ${thresholdUnit})`,
 			points: { show: false },
 			show: true
 		}))
@@ -123,16 +122,12 @@ const HydroChart = ({ config }) => {
 				{ label: yLabel, stroke: axisStroke() }
 			],
 			series: [
-				{
-					label: 'Date',
-					value: (u, raw) => raw ? fullDateTimeFormatter(new Date(raw * 1000)) : '-'
-				},
+				{ label: 'Date' },
 				{
 					label: yLabel,
 					stroke: color,
 					spanGaps: false,
-					width: 2,
-					value: (u, v) => (v != null && !isNaN(v)) ? `${formaterNombreFr(v)} ${unit}` : '-'
+					width: 2
 				},
 				...thresholdsSeries
 			]
@@ -141,10 +136,7 @@ const HydroChart = ({ config }) => {
 			const xVal = u.data[0][idx]
 			const yVal = u.data[1][idx]
 			if (xVal == null || yVal == null) return null
-			return `
-				<div class="date">${fullDateTimeFormatter(new Date(xVal * 1000))}</div>
-				<div class="value">${formaterNombreFr(yVal)} ${unit}</div>
-			`
+			return tooltipBaseRows(xVal, yVal, unit)
 		},
 		exportPrefix: `hydro-${idStation}`,
 		onChartReady: () => {
