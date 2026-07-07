@@ -3,8 +3,8 @@
 	display: inline-block;
 	width: 14px;
 	height: 14px;
-	border: 2px solid rgba(0, 123, 255, 0.25);
-	border-top-color: #007BFF;
+	border: 2px solid var(--acq-border);
+	border-top-color: var(--acq-primary);
 	border-radius: 50%;
 	animation: acycliq-spin 0.7s linear infinite;
 	vertical-align: middle;
@@ -36,7 +36,7 @@
 	font-weight: bold;
 	line-height: 1;
 	color: #fff;
-	background: #d97706;
+	background: var(--acq-warning);
 	border: none;
 	clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
 	cursor: pointer;
@@ -44,7 +44,7 @@
 
 .refresh-warning:hover,
 .refresh-warning:focus-visible {
-	background: #b45309;
+	background: var(--acq-warning-hover);
 }
 
 /* Tooltip personnalisé : s'affiche instantanément au survol (contrairement au
@@ -59,8 +59,8 @@
 	width: max-content;
 	max-width: 240px;
 	padding: 6px 10px;
-	background: rgba(0, 0, 0, 0.85);
-	color: #fff;
+	background: var(--acq-tooltip-bg);
+	color: var(--acq-tooltip-fg);
 	font-size: 12px;
 	font-weight: normal;
 	line-height: 1.35;

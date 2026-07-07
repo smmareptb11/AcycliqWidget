@@ -6,35 +6,71 @@
 	padding: 0.25rem 0;
 }
 
+/* Contrôle segmenté : un seul conteneur pilule, boutons jointifs. */
 .zoom-buttons {
-	display: flex;
+	display: inline-flex;
 	flex-wrap: wrap;
-	gap: 0.25rem;
+	padding: 2px;
+	background: var(--acq-surface-muted);
+	border: 1px solid var(--acq-border);
+	border-radius: var(--acq-radius-pill);
 }
 
-.zoom-btn,
-.chart-controls .export-btn {
-	background: #f0f0f0;
-	border: 1px solid #ccc;
-	border-radius: 4px;
-	padding: 0.2rem 0.5rem;
-	font-size: 0.75rem;
+.zoom-btn {
+	background: transparent;
+	border: none;
+	border-radius: var(--acq-radius-pill);
+	padding: 0.2rem 0.6rem;
+	font-size: var(--acq-fs-xs);
+	font-variant-numeric: tabular-nums;
 	cursor: pointer;
-	color: #333;
+	color: var(--acq-text-muted);
+	transition: color 0.15s ease, background 0.15s ease;
 }
 
-.zoom-btn:hover,
-.chart-controls .export-btn:hover {
-	background: #e0e0e0;
+.zoom-btn:hover {
+	color: var(--acq-text);
 }
 
 .zoom-btn.active {
-	background: #007BFF;
+	background: var(--acq-primary);
 	color: #fff;
-	border-color: #0069d9;
 }
 
+.zoom-btn:focus-visible,
+.chart-controls .export-btn:focus-visible {
+	outline: none;
+	box-shadow: var(--acq-focus-ring);
+}
+
+/* Bouton d'export PNG : icône + libellé « PNG » pour être explicite. */
 .chart-controls .export-btn {
 	margin-left: auto;
-	font-weight: bold;
+	display: inline-flex;
+	align-items: center;
+	gap: 0.3rem;
+	padding: 0.25rem 0.55rem;
+	background: transparent;
+	border: 1px solid var(--acq-border);
+	border-radius: var(--acq-radius-sm);
+	color: var(--acq-text-muted);
+	font-size: var(--acq-fs-xs);
+	font-weight: var(--acq-fw-bold);
+	cursor: pointer;
+	transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.export-btn-label {
+	line-height: 1;
+}
+
+.chart-controls .export-btn:hover {
+	color: var(--acq-primary);
+	border-color: var(--acq-primary);
+}
+
+.chart-controls .export-btn svg {
+	display: block;
+	width: 16px;
+	height: 16px;
 }

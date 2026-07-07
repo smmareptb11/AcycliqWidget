@@ -10,10 +10,10 @@ const token = import.meta.env.VITE_ACYCLIQ_TOKEN
 
 if (!apiUrl || !token) {
 	render(
-		<div style="padding:2rem; font-family:system-ui, sans-serif; color:#900;">
+		<div className="acycliq-config-error">
 			<h2>Configuration manquante</h2>
 			<p>Créez un fichier <code>.env</code> à la racine du projet avec :</p>
-			<pre style="background:#f5f5f5; padding:1rem; border-radius:4px; color:#333;">{`VITE_ACYCLIQ_TOKEN=votre_token_ici
+			<pre>{`VITE_ACYCLIQ_TOKEN=votre_token_ici
 VITE_ACYCLIQ_API_URL=https://smmar.acycliq.fr/api`}</pre>
 			<p>Puis relancez <code>yarn dev</code>.</p>
 		</div>,

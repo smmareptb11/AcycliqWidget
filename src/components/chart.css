@@ -1,0 +1,141 @@
+/* Chrome de graphe PARTAGÉ par les widgets hydro et pluvio.
+   Regroupe ici les styles auparavant définis dans hydro-chart.css seul mais
+   consommés par les deux widgets (et par use-chart.js) — évite qu'un bundle
+   pluvio isolé se retrouve sans tooltip/ranger/états stylés. */
+
+.chart-wrapper {
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	min-width: 0;
+	overflow: hidden;
+}
+
+/* marge = RANGER_OFFSET / 2 (100px dans use-chart.js) pour que le canevas du ranger tienne dans sa boîte */
+.chart-ranger {
+	margin: 0 50px;
+}
+
+/* touch-action: none neutralise le scroll/zoom natif pour laisser passer les Pointer Events du drag */
+.chart-ranger .u-over,
+.chart-ranger .u-select,
+.chart-ranger .u-grip-l,
+.chart-ranger .u-grip-r {
+	touch-action: none;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+.chart-ranger .u-select {
+	pointer-events: all;
+	cursor: grabbing;
+}
+
+.chart-ranger .u-grip-l,
+.chart-ranger .u-grip-r {
+	position: absolute;
+	top: 0;
+	width: 8px;
+	height: 100%;
+	/* Gris foncé neutre + double liseré (halo clair + ombre) pour rester
+	   visible sur un graphe bleu, un fond clair ou un fond sombre. */
+	background: var(--acq-grip-bg);
+	border: 1px solid rgba(255, 255, 255, 0.9);
+	box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.2);
+	border-radius: 2px;
+	cursor: ew-resize;
+}
+
+/* Poignées placées juste à l'EXTÉRIEUR des bords de la sélection : elles ne
+   peuvent jamais se chevaucher, même quand la sélection est minuscule. */
+.chart-ranger .u-grip-l { right: 100%; }
+.chart-ranger .u-grip-r { left: 100%; }
+
+/* Zone tactile étendue vers l'extérieur uniquement (bornée au bord de la
+   sélection côté intérieur) → jamais de recouvrement entre les deux poignées. */
+.chart-ranger .u-grip-l::before,
+.chart-ranger .u-grip-r::before {
+	content: '';
+	position: absolute;
+	top: -10px;
+	bottom: -10px;
+}
+.chart-ranger .u-grip-l::before { left: -16px; right: 0; }
+.chart-ranger .u-grip-r::before { left: 0; right: -16px; }
+
+/* Cibles tactiles élargies (~44px) sur pointeurs grossiers (doigt). */
+@media (pointer: coarse) {
+	.chart-ranger .u-grip-l::before,
+	.chart-ranger .u-grip-r::before {
+		top: -16px;
+		bottom: -16px;
+	}
+	.chart-ranger .u-grip-l::before { left: -36px; }
+	.chart-ranger .u-grip-r::before { right: -36px; }
+}
+
+.acycliq-tooltip {
+	display: none;
+	position: fixed;
+	z-index: 9999;
+	background: var(--acq-tooltip-bg);
+	color: var(--acq-tooltip-fg);
+	padding: 6px 10px;
+	border-radius: var(--acq-radius);
+	box-shadow: var(--acq-shadow-sm);
+	font-size: 12px;
+	pointer-events: none;
+}
+
+.acycliq-tooltip .date {
+	margin-bottom: 0.25rem;
+	color: var(--acq-tooltip-fg);
+	opacity: 0.75;
+}
+
+.acycliq-tooltip .value {
+	font-weight: var(--acq-fw-bold);
+	white-space: nowrap;
+	font-variant-numeric: tabular-nums;
+}
+
+/* --- États : chargement / erreur / vide (partagés hydro + pluvio) --- */
+.acycliq-loading,
+.acycliq-error,
+.acycliq-empty {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: var(--acq-space-2);
+	height: 200px;
+	font-family: var(--acq-font);
+	font-size: var(--acq-fs-body);
+	color: var(--acq-text-muted);
+}
+
+.acycliq-error {
+	color: var(--acq-danger);
+}
+
+/* Petit spinner de chargement. La keyframe est (re)définie ici pour que
+   chart.css reste autonome, sans dépendre de refresh-status.css. */
+.acycliq-loading-spinner {
+	display: inline-block;
+	width: 16px;
+	height: 16px;
+	border: 2px solid var(--acq-border);
+	border-top-color: var(--acq-primary);
+	border-radius: 50%;
+	animation: acycliq-spin 0.7s linear infinite;
+}
+
+@keyframes acycliq-spin {
+	to { transform: rotate(360deg); }
+}
+
+/* Glyphe d'icône pour les états erreur/vide (SVG hérite de currentColor). */
+.acycliq-state-icon {
+	flex: none;
+	width: 18px;
+	height: 18px;
+}

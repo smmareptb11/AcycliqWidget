@@ -5,10 +5,13 @@ import { formaterNombreFr } from '../lib/util/number.js'
 import { fetchHydroStation, fetchHydroMeasures, fetchHydroThresholds } from '../lib/api.js'
 import { buildHydroPlotData, applyThresholdsNgf } from '../lib/data-transform.js'
 import { useChart, useDateRange, useAutoRefresh, xAxisConfig } from '../lib/hooks/use-chart.js'
+import { CHART_HEIGHT, THRESHOLD_FALLBACK } from '../lib/theme.js'
 import { refreshStart, refreshSuccess, refreshFailure } from '../lib/refresh-state.js'
 import ChartControls from './chart-controls.jsx'
 import Legend from './legend.jsx'
 import RefreshStatus from './refresh-status.jsx'
+import { LoadingState, ErrorState, EmptyState } from './chart-states.jsx'
+import './chart.css'
 import './hydro-chart.css'
 
 const HydroChart = ({ config }) => {
@@ -95,7 +98,7 @@ const HydroChart = ({ config }) => {
 	const thresholdsSeries = useMemo(() =>
 		displayThresholds.map(th => ({
 			label: th.name,
-			stroke: th.htmlColor || '#999',
+			stroke: th.htmlColor || THRESHOLD_FALLBACK,
 			width: 2,
 			dash: [8, 4],
 			value: () => `${th.name} (${formaterNombreFr(th.value)} ${thresholdUnit})`,
@@ -110,7 +113,7 @@ const HydroChart = ({ config }) => {
 		color,
 		buildChartOpts: (chartWidth, initMin, initMax) => ({
 			width: chartWidth,
-			height: 300,
+			height: CHART_HEIGHT,
 			scales: {
 				x: { time: true, min: initMin, max: initMax },
 				y: { auto: true }
@@ -172,15 +175,15 @@ const HydroChart = ({ config }) => {
 		: null
 
 	if (state.loading) {
-		return <div className="acycliq-loading">Chargement...</div>
+		return <LoadingState />
 	}
 
 	if (state.error) {
-		return <div className="acycliq-error">Erreur : {state.error}</div>
+		return <ErrorState message={state.error} />
 	}
 
 	if (!plotData || plotData[0].length === 0) {
-		return <div className="acycliq-empty">Aucune donnée disponible</div>
+		return <EmptyState />
 	}
 
 	return (

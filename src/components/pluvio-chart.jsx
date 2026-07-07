@@ -6,9 +6,12 @@ import { formaterNombreFr } from '../lib/util/number.js'
 import { fetchPluvioStation, fetchPluvioMeasures } from '../lib/api.js'
 import { buildPluvioPlotData, computeWindowedCumul, pluvioBarLabel } from '../lib/data-transform.js'
 import { useChart, useDateRange, useAutoRefresh, xAxisConfig } from '../lib/hooks/use-chart.js'
+import { CHART_HEIGHT, FILL_ALPHA_SUFFIX } from '../lib/theme.js'
 import { refreshStart, refreshSuccess, refreshFailure } from '../lib/refresh-state.js'
 import ChartControls from './chart-controls.jsx'
 import RefreshStatus from './refresh-status.jsx'
+import { LoadingState, ErrorState, EmptyState } from './chart-states.jsx'
+import './chart.css'
 import './pluvio-chart.css'
 
 const barSize = UPlot.paths.bars({ size: [0.8], align: 1 })
@@ -126,7 +129,7 @@ const PluvioChart = ({ config }) => {
 				{
 					label: barLabel,
 					stroke: color,
-					fill: color + '80',
+					fill: color + FILL_ALPHA_SUFFIX,
 					width: 1,
 					paths: barSize,
 					points: { show: false },
@@ -170,7 +173,7 @@ const PluvioChart = ({ config }) => {
 				scales.cumul = { range: nonNegativeAutoRange }
 			}
 
-			return { width: chartWidth, height: 300, scales, axes, series }
+			return { width: chartWidth, height: CHART_HEIGHT, scales, axes, series }
 		},
 		formatTooltip: (u, idx) => {
 			const xVal = u.data[0][idx]
@@ -196,15 +199,15 @@ const PluvioChart = ({ config }) => {
 	})
 
 	if (state.loading) {
-		return <div className="acycliq-loading">Chargement...</div>
+		return <LoadingState />
 	}
 
 	if (state.error) {
-		return <div className="acycliq-error">Erreur : {state.error}</div>
+		return <ErrorState message={state.error} />
 	}
 
 	if (!plotData || plotData[0].length === 0) {
-		return <div className="acycliq-empty">Aucune donnée disponible</div>
+		return <EmptyState />
 	}
 
 	return (

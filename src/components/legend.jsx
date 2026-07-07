@@ -1,4 +1,5 @@
 import { formaterNombreFr } from '../lib/util/number.js'
+import { INACTIVE_RULE } from '../lib/theme.js'
 import './legend.css'
 
 const Legend = ({ thresholds, seriesVisibility, onToggle, unit = 'm' }) => {
@@ -11,7 +12,7 @@ const Legend = ({ thresholds, seriesVisibility, onToggle, unit = 'm' }) => {
 					? seriesVisibility.get(th.name)
 					: true
 
-				const ruleColor = isActive ? th.htmlColor : '#bbb'
+				const ruleColor = isActive ? th.htmlColor : INACTIVE_RULE
 
 				const lineStyle = {
 					display: 'inline-block',
@@ -32,7 +33,7 @@ const Legend = ({ thresholds, seriesVisibility, onToggle, unit = 'm' }) => {
 						title={`Cliquer pour ${isActive ? 'masquer' : 'afficher'} le seuil ${th.name}`}
 					>
 						<span aria-hidden="true" style={lineStyle} />
-						<span>{th.name} ({formaterNombreFr(th.value)} {unit})</span>
+						<span className="threshold-legend-label">{th.name} ({formaterNombreFr(th.value)} {unit})</span>
 					</button>
 				)
 			})}
