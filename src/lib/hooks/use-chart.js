@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback, useState, useMemo } from 'preact/hooks'
 import UPlot from 'uplot'
-import { shortDateTimeFormatter } from '../util/date.js'
+import { shortDateTimeFormatter, fullDateTimeFormatter } from '../util/date.js'
+import { formaterNombreFr } from '../util/number.js'
 import { CHART_HEIGHT, axisStroke, RANGER_FILL_ALPHA } from '../theme.js'
 
 const DEFAULT_CHART_HEIGHT = CHART_HEIGHT
@@ -372,6 +373,22 @@ export function useChart({ plotData, hours, color, buildChartOpts, formatTooltip
 	}, [exportPrefix])
 
 	return { chartRef, rangerRef, uPlotRef, activeHours, handleZoom, handleExportPNG }
+}
+
+/**
+ * Lignes de base d'une infobulle : date formatée puis valeur + unité. Partagé par
+ * les graphes hydro et pluvio ; ce dernier y ajoute ensuite sa ligne de cumul.
+ *
+ * @param {number} xVal - timestamp x en secondes
+ * @param {number} yVal - valeur de la série principale
+ * @param {string} unit - unité affichée (m, m³/s, mm…)
+ * @returns {string} fragment HTML
+ */
+export function tooltipBaseRows(xVal, yVal, unit) {
+	return `
+		<div class="date">${fullDateTimeFormatter(new Date(xVal * 1000))}</div>
+		<div class="value">${formaterNombreFr(yVal)} ${unit}</div>
+	`
 }
 
 export function xAxisConfig() {
