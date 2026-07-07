@@ -1,46 +1,147 @@
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+	/* --- Tokens de design (préfixe --acq- pour éviter les collisions côté hôte) --- */
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+	/* Accents (miroir des défauts JS de config.js pour le « chrome ») */
+	--acq-primary: #0284C7;
+	--acq-primary-hover: #0369A1;
+	--acq-cumul: #EA580C;
+	--acq-warning: #d97706;
+	--acq-warning-hover: #b45309;
+	--acq-danger: #c0332e;
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+	/* Surfaces & texte (thème clair par défaut) */
+	--acq-bg: #ffffff;
+	--acq-surface: #ffffff;
+	--acq-surface-muted: #f1f5f9;
+	--acq-border: #e2e8f0;
+	--acq-text: #1e293b;
+	--acq-text-muted: #64748b;
+	--acq-text-faint: #94a3b8;
+	--acq-tooltip-bg: rgba(15, 23, 42, 0.92);
+	--acq-tooltip-fg: #ffffff;
+	/* Poignées du sélecteur temporel : gris foncé neutre + halo clair, pour
+	   rester visibles quel que soit le fond (graphe bleu, clair ou sombre). */
+	--acq-grip-bg: #475569;
+
+	/* Typographie (police système uniquement, aucune police web) */
+	--acq-font: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+	--acq-fs-title: 1.15rem;
+	--acq-fs-body: 0.875rem;
+	--acq-fs-sm: 0.8rem;
+	--acq-fs-xs: 0.72rem;
+	--acq-fw-bold: 650;
+
+	/* Espace / rayon / effets */
+	--acq-space-1: 0.25rem;
+	--acq-space-2: 0.5rem;
+	--acq-space-3: 0.75rem;
+	--acq-space-4: 1rem;
+	--acq-radius-sm: 4px;
+	--acq-radius: 6px;
+	--acq-radius-pill: 999px;
+	--acq-focus-ring: 0 0 0 3px rgba(2, 132, 199, 0.35);
+	--acq-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+
+	font-family: var(--acq-font);
+	line-height: 1.5;
+	font-weight: 400;
+
+	color-scheme: light dark;
+	color: var(--acq-text);
+	background-color: var(--acq-bg);
+
+	font-synthesis: none;
+	text-rendering: optimizeLegibility;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }
 
 /* Titre (nom de station) partagé par les widgets hydro et pluvio.
    Flex pour aligner l'indicateur d'état de rafraîchissement (RefreshStatus)
    juste après le nom de la station. */
 .acycliq-title {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 1.15rem;
-  font-weight: bold;
-  color: #222;
-  padding: 0.25rem 0 0;
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
+	font-size: var(--acq-fs-title);
+	font-weight: var(--acq-fw-bold);
+	color: var(--acq-text);
+	padding: 0.25rem 0 0;
 }
 
 body,
 html,
 main {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  min-height: 100vh;
-  padding: 0;
-  margin: 0;
-  overflow-x: hidden;
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	min-height: 100vh;
+	padding: 0;
+	margin: 0;
+	overflow-x: hidden;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
+/* Libellé accessible masqué visuellement (lecteurs d'écran uniquement). */
+.sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+/* Écran d'erreur de configuration (partagé par main.jsx et dev.jsx). */
+.acycliq-config-error {
+	padding: var(--acq-space-4);
+	font-family: var(--acq-font);
+	color: var(--acq-text);
+	background: var(--acq-surface-muted);
+	border: 1px solid var(--acq-border);
+	border-left: 3px solid var(--acq-danger);
+	border-radius: var(--acq-radius);
+}
+
+.acycliq-config-error h2 {
+	margin: 0 0 var(--acq-space-2);
+	font-size: 1.05rem;
+	color: var(--acq-danger);
+}
+
+.acycliq-config-error code,
+.acycliq-config-error pre {
+	background: var(--acq-bg);
+	border: 1px solid var(--acq-border);
+	border-radius: var(--acq-radius-sm);
+}
+
+.acycliq-config-error code {
+	padding: 0.1em 0.35em;
+	font-size: 0.9em;
+}
+
+.acycliq-config-error pre {
+	padding: var(--acq-space-3);
+	overflow-x: auto;
+	color: var(--acq-text);
+}
+
+/* Variante sombre : ne redéfinit que les tokens surface/texte (accents inchangés). */
+@media (prefers-color-scheme: dark) {
+	:root {
+		--acq-bg: #0f172a;
+		--acq-surface: #1e293b;
+		--acq-surface-muted: #334155;
+		--acq-border: #334155;
+		--acq-text: #e2e8f0;
+		--acq-text-muted: #94a3b8;
+		--acq-text-faint: #64748b;
+		--acq-tooltip-bg: rgba(0, 0, 0, 0.9);
+
+		color: var(--acq-text);
+		background-color: var(--acq-bg);
+	}
 }
