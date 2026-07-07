@@ -21,14 +21,15 @@ export function buildHydroPlotData(measures, altitude, useNgf, isHeight, thresho
 }
 
 /**
- * Offset threshold values by the station altitude when NGF is active, so the
- * seuil lines and their displayed values line up with the (also-offset) height
- * curve. When NGF does not apply, values pass through unchanged.
+ * Décale les valeurs de seuil de l'altitude de la station quand le NGF est actif,
+ * pour que les lignes de seuil et leurs valeurs affichées s'alignent sur la courbe
+ * de hauteur (elle aussi décalée). Quand le NGF ne s'applique pas, les valeurs
+ * passent inchangées.
  *
- * @param {Array<{value: number}>} thresholds - raw thresholds from the API
- * @param {number} altitude - station altitude (m)
- * @param {boolean} applyNgf - whether NGF conversion is active
- * @returns {Array<object>} thresholds with `value` adjusted (other fields kept)
+ * @param {Array<{value: number}>} thresholds - seuils bruts issus de l'API
+ * @param {number} altitude - altitude de la station (m)
+ * @param {boolean} applyNgf - indique si la conversion NGF est active
+ * @returns {Array<object>} seuils avec `value` ajustée (les autres champs conservés)
  */
 export function applyThresholdsNgf(thresholds, altitude, applyNgf) {
 	return (thresholds || []).map(th => ({
@@ -38,8 +39,9 @@ export function applyThresholdsNgf(thresholds, altitude, applyNgf) {
 }
 
 /**
- * Label for the rainfall bars series, reflecting the chosen aggregation:
- * a daily sum (`SUM_DAY`) accumulates over a day, the other modes stay hourly.
+ * Libellé de la série de barres de pluie, reflétant l'agrégation choisie :
+ * une somme journalière (`SUM_DAY`) cumule sur une journée, les autres modes
+ * restent horaires.
  *
  * @param {string} groupFunc - 'all' | 'SUM_HOUR' | 'SUM_DAY'
  * @returns {string}
@@ -62,22 +64,22 @@ export function buildPluvioPlotData(measures) {
 }
 
 /**
- * Compute the rainfall cumulative sum restricted to a visible window.
+ * Calcule la somme cumulée de pluie restreinte à une fenêtre visible.
  *
- * Behaviour:
- * - Points outside [minX, maxX] (inclusive bounds) get `null`.
- * - Points inside the window accumulate from 0, restarting at the first
- *   visible point (so each new zoom shows a fresh cumul curve).
- * - `null` values inside the window are kept as-is on the cumul output
- *   (the accumulator carries over) — except when the very first visible
- *   point is itself null: in that case the cumul starts at 0, because
- *   « 0 mm of rain accumulated so far » is the meaningful answer.
- * - Values are rounded to 2 decimals to avoid float drift.
+ * Comportement :
+ * - Les points hors de [minX, maxX] (bornes incluses) reçoivent `null`.
+ * - Les points dans la fenêtre s'accumulent depuis 0, en repartant du premier
+ *   point visible (chaque nouveau zoom affiche donc une courbe de cumul neuve).
+ * - Un point `null` dans la fenêtre ne s'ajoute pas au total, mais reçoit en
+ *   sortie l'accumulateur courant : la courbe de cumul reste plate sur un trou
+ *   de mesure au lieu de retomber à null. Le premier point visible, s'il est
+ *   null, vaut donc 0 : « 0 mm de pluie cumulés jusqu'ici ».
+ * - Les valeurs sont arrondies à 2 décimales pour éviter la dérive des flottants.
  *
- * @param {number[]} xVals - x timestamps in seconds (sorted ascending)
- * @param {Array<number|null>} yVals - rainfall values (same length as xVals)
- * @param {number} minX - visible window start (seconds, inclusive)
- * @param {number} maxX - visible window end (seconds, inclusive)
+ * @param {number[]} xVals - timestamps x en secondes (triés croissants)
+ * @param {Array<number|null>} yVals - valeurs de pluie (même longueur que xVals)
+ * @param {number} minX - début de la fenêtre visible (secondes, incluse)
+ * @param {number} maxX - fin de la fenêtre visible (secondes, incluse)
  * @returns {{ cumul: Array<number|null>, max: number }}
  */
 export function computeWindowedCumul(xVals, yVals, minX, maxX) {

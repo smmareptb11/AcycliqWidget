@@ -189,7 +189,7 @@ describe('computeWindowedCumul', () => {
 	it('resets accumulator to 0 at the first visible point', () => {
 		const yVals = [10, 1, 2, 3, 20]
 		const { cumul } = computeWindowedCumul(xVals, yVals, 200, 400)
-		// First visible value is 1, not continuing from 10.
+		// La première valeur visible est 1, sans reprendre depuis 10.
 		expect(cumul[1]).toBe(1)
 		expect(cumul[2]).toBe(3)
 		expect(cumul[3]).toBe(6)
