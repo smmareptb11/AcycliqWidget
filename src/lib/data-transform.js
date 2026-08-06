@@ -36,6 +36,25 @@ export function buildHydroPlotData(measures, altitude, useNgf, isHeight, thresho
 }
 
 /**
+ * Index du dernier point réellement mesuré d'une colonne uPlot.
+ *
+ * Les séries hydro contiennent des trous (`null`, tracés avec `spanGaps: false`).
+ * Lire directement la dernière case ferait disparaître la dernière valeur de
+ * l'en-tête dès que la station n'a rien émis sur le dernier pas de temps, alors
+ * qu'une valeur récente existe juste avant.
+ *
+ * @param {Array<number|null>} yVals
+ * @returns {number} index du dernier point non nul, ou -1 s'il n'y en a aucun
+ */
+export function lastMeasuredIndex(yVals) {
+	if (!yVals) return -1
+	for (let i = yVals.length - 1; i >= 0; i--) {
+		if (yVals[i] != null) return i
+	}
+	return -1
+}
+
+/**
  * Décale les valeurs de seuil de l'altitude de la station quand le NGF est actif,
  * pour que les lignes de seuil et leurs valeurs affichées s'alignent sur la courbe
  * de hauteur (elle aussi décalée). Quand le NGF ne s'applique pas, les valeurs
