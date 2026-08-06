@@ -1,3 +1,5 @@
+import { THRESHOLD_CATEGORIES, ALL_CATEGORY_KEYS, normalizeCategoryKeys, resolveCategoryKey } from './threshold-categories.js'
+
 const HYDRO_DEFAULTS = {
 	width: '100%',
 	height: '100%',
@@ -6,6 +8,11 @@ const HYDRO_DEFAULTS = {
 	hours: 3,
 	ngf: true,
 	threshold: true,
+	// Toutes les catégories sont proposées, et toutes sont actives au
+	// chargement : c'est ce qui préserve le comportement historique de
+	// `threshold: true`, qui affichait l'intégralité des seuils de la station.
+	thresholdCategories: ALL_CATEGORY_KEYS,
+	thresholdCategoriesDefault: ALL_CATEGORY_KEYS,
 	refresh: 5
 }
 
@@ -21,6 +28,34 @@ const PLUVIO_DEFAULTS = {
 }
 
 const GROUP_FUNCS = ['all', 'SUM_HOUR', 'SUM_DAY']
+
+const CATEGORY_HINT = THRESHOLD_CATEGORIES
+	.map(c => (c.code != null ? `"${c.key}" (${c.code})` : `"${c.key}"`))
+	.join(', ')
+
+/**
+ * Valide une option de catégories de seuils. Renvoie `false` dès qu'une erreur
+ * est signalée, pour que l'appelant sache s'il peut enchaîner sur le contrôle
+ * croisé des deux options.
+ */
+function validateCategoryOption(value, name, errors) {
+	if (value === undefined) return true
+
+	if (!Array.isArray(value)) {
+		errors.push(`"${name}" doit être un tableau de catégories de seuils.`)
+		return false
+	}
+
+	// normalizeCategoryKeys ignore silencieusement les valeurs inconnues : on
+	// repère donc les entrées fautives une à une pour les nommer dans le message.
+	const unknown = value.filter(entry => resolveCategoryKey(entry) === null)
+	if (unknown.length > 0) {
+		errors.push(`"${name}" contient des catégories inconnues (${unknown.join(', ')}). Valeurs acceptées : ${CATEGORY_HINT}.`)
+		return false
+	}
+
+	return true
+}
 
 export function validateHydroConfig(config) {
 	const errors = []
@@ -44,6 +79,21 @@ export function validateHydroConfig(config) {
 
 	if (config.refresh !== undefined && (typeof config.refresh !== 'number' || config.refresh < 1)) {
 		errors.push('"refresh" doit être un nombre positif (en minutes).')
+	}
+
+	const categoriesOk = validateCategoryOption(config.thresholdCategories, 'thresholdCategories', errors)
+	const defaultsOk = validateCategoryOption(config.thresholdCategoriesDefault, 'thresholdCategoriesDefault', errors)
+
+	// Une catégorie active par défaut mais non proposée ne serait ni affichée ni
+	// activable depuis la légende : une configuration silencieusement
+	// inopérante, qui mérite une erreur explicite plutôt qu'un filtrage discret.
+	if (categoriesOk && defaultsOk) {
+		const proposed = normalizeCategoryKeys(config.thresholdCategories)
+		const orphans = normalizeCategoryKeys(config.thresholdCategoriesDefault, [])
+			.filter(key => !proposed.includes(key))
+		if (orphans.length > 0) {
+			errors.push(`"thresholdCategoriesDefault" contient des catégories absentes de "thresholdCategories" : ${orphans.join(', ')}.`)
+		}
 	}
 
 	return { valid: errors.length === 0, errors }
