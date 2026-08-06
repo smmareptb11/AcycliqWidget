@@ -41,6 +41,20 @@ else {
 		{
 			title: 'Hydrométrie — config max (débit, 12h, sans NGF, sans seuils, couleur custom)',
 			component: <HydroChart config={applyHydroDefaults({ apiUrl, token, idStation: 17, container: '#app', dataType: 5, hours: 12, ngf: false, threshold: false, color: '#4CAF50' })} />
+		},
+		{
+			// Station dont les seuils portent une catégorie : les informatifs et les
+			// contrôles sont proposés dans la légende mais grisés au chargement.
+			// refresh à 1 min pour vérifier qu'un seuil masqué à la main survit au
+			// rafraîchissement.
+			title: 'Hydrométrie — catégories de seuils (station 65, informatifs et contrôles grisés, refresh 1min)',
+			component: <HydroChart config={applyHydroDefaults({ apiUrl, token, idStation: 65, container: '#app', thresholdCategories: ['situation', 'informatif', 'controle'], thresholdCategoriesDefault: ['situation'], refresh: 1 })} />
+		},
+		{
+			// Station dont les seuils n'ont aucune catégorie : ils doivent tous
+			// rester affichés via la catégorie « non classé » (non-régression).
+			title: 'Hydrométrie — seuils sans catégorie (station 20, catégorie « non classé »)',
+			component: <HydroChart config={applyHydroDefaults({ apiUrl, token, idStation: 20, container: '#app' })} />
 		}
 	]
 
