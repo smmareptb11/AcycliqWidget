@@ -15,6 +15,16 @@ function prepareMeasures(measures) {
 	return { sorted, xVals }
 }
 
+/**
+ * Décalage entre l'index d'un seuil et celui de sa série uPlot : la colonne 0
+ * est l'axe x, la colonne 1 la courbe de mesure, les seuils suivent.
+ *
+ * Déclaré ici, auprès de la fonction qui décide de cette disposition : le
+ * décalage en découle, et le nommer côté consommateur laisserait l'invariant
+ * sans propriétaire.
+ */
+export const THRESHOLD_SERIES_OFFSET = 2
+
 export function buildHydroPlotData(measures, altitude, useNgf, isHeight, thresholds) {
 	const prepared = prepareMeasures(measures)
 	if (!prepared) return null
