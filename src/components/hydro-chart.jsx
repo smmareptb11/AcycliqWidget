@@ -4,7 +4,7 @@ import { fullDateTimeFormatter } from '../lib/util/date.js'
 import { formaterNombreFr } from '../lib/util/number.js'
 import { buildExportName } from '../lib/util/download.js'
 import { fetchHydroStation, fetchHydroMeasures, fetchHydroThresholds } from '../lib/api.js'
-import { buildHydroPlotData, applyThresholdsNgf, THRESHOLD_SERIES_OFFSET } from '../lib/data-transform.js'
+import { buildHydroPlotData, applyThresholdsNgf, lastMeasuredIndex, THRESHOLD_SERIES_OFFSET } from '../lib/data-transform.js'
 import { shouldApplyNgf } from '../lib/ngf.js'
 import {
 	normalizeCategoryKeys,
@@ -100,7 +100,10 @@ const HydroChart = ({ config }) => {
 	const yLabel = isHeight
 		? (applyNgf ? 'Hauteur (m NGF)' : 'Hauteur (m)')
 		: 'Débit (m³/s)'
-	const thresholdUnit = applyNgf ? 'm NGF' : unit
+	// Unité effectivement affichée : en mode NGF les valeurs tracées sont recalées
+	// sur l'altitude, l'en-tête doit donc annoncer « m NGF » comme le fait déjà
+	// l'axe Y et la légende des seuils.
+	const displayUnit = applyNgf ? 'm NGF' : unit
 
 	// Quand le NGF est actif, les seuils doivent être décalés de l'altitude de la
 	// station, tout comme la courbe de mesure — sinon les lignes de seuil et leurs
@@ -190,7 +193,10 @@ const HydroChart = ({ config }) => {
 			const xVal = u.data[0][idx]
 			const yVal = u.data[1][idx]
 			if (xVal == null || yVal == null) return null
-			return tooltipBaseRows(xVal, yVal, unit)
+			// displayUnit, pas unit : les valeurs tracées sont recalées en NGF quand
+			// le mode est actif, l'infobulle doit annoncer la même unité que l'axe Y,
+			// l'en-tête et la légende.
+			return tooltipBaseRows(xVal, yVal, displayUnit)
 		},
 		exportPrefix: buildExportName('hydro', state.stationInfo?.name, state.stationInfo?.code ?? idStation)
 	})
@@ -245,12 +251,9 @@ const HydroChart = ({ config }) => {
 		setSeriesVisibility(prev => withVisibility(prev, items, next))
 	}, [])
 
-	const lastValue = plotData && plotData[1].length > 0
-		? plotData[1][plotData[1].length - 1]
-		: null
-	const lastDate = plotData && plotData[0].length > 0
-		? new Date(plotData[0][plotData[0].length - 1] * 1000)
-		: null
+	const lastIndex = plotData ? lastMeasuredIndex(plotData[1]) : -1
+	const lastValue = lastIndex > -1 ? plotData[1][lastIndex] : null
+	const lastDate = lastIndex > -1 ? new Date(plotData[0][lastIndex] * 1000) : null
 
 	if (state.loading) {
 		return <LoadingState />
@@ -266,24 +269,24 @@ const HydroChart = ({ config }) => {
 
 	return (
 		<div className="acycliq-hydro">
-			{state.stationInfo?.name && (
-				<div className="acycliq-title">
-					{state.stationInfo.name}
-					<RefreshStatus
-						refreshing={state.refreshing}
-						refreshError={state.refreshError}
-						onForceRefresh={loadMeasures}
-					/>
-				</div>
-			)}
-
-			<div className="acycliq-header">
-				{lastValue != null && (
-					<span className="last-value">
-						{formaterNombreFr(lastValue)} {unit}
-						{lastDate && <span className="last-date"> — {fullDateTimeFormatter(lastDate)}</span>}
-					</span>
+			{/* Nom de station, dernière valeur et date d'acquisition sur une seule
+			    ligne : l'iframe ne dispose que d'une centaine de pixels hors canevas,
+			    chaque ligne gagnée compte. */}
+			<div className="acycliq-headline">
+				{state.stationInfo?.name && (
+					<span className="station-name">{state.stationInfo.name}</span>
 				)}
+				{lastValue != null && (
+					<span className="last-value">{formaterNombreFr(lastValue)} {displayUnit}</span>
+				)}
+				{lastDate && (
+					<span className="last-date">{fullDateTimeFormatter(lastDate)}</span>
+				)}
+				<RefreshStatus
+					refreshing={state.refreshing}
+					refreshError={state.refreshError}
+					onForceRefresh={loadMeasures}
+				/>
 			</div>
 
 			<ChartControls activeHours={activeHours} onZoom={handleZoom} onExportPNG={handleExportPNG} />
@@ -296,7 +299,7 @@ const HydroChart = ({ config }) => {
 			{showThresholds && (
 				<Legend
 					thresholds={displayThresholds}
-					unit={thresholdUnit}
+					unit={displayUnit}
 					seriesVisibility={seriesVisibility}
 					defaultKeys={defaultKeys}
 					onToggle={toggleThreshold}

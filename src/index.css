@@ -56,9 +56,8 @@
 	-moz-osx-font-smoothing: grayscale;
 }
 
-/* Titre (nom de station) partagé par les widgets hydro et pluvio.
-   Flex pour aligner l'indicateur d'état de rafraîchissement (RefreshStatus)
-   juste après le nom de la station. */
+/* Titre (nom de station) du widget pluvio. Flex pour aligner l'indicateur d'état
+   de rafraîchissement (RefreshStatus) juste après le nom de la station. */
 .acycliq-title {
 	display: flex;
 	align-items: center;
