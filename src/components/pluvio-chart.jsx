@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, useMemo } from 'preact/hooks'
 import UPlot from 'uplot'
 import 'uplot/dist/uPlot.min.css'
 import { formaterNombreFr } from '../lib/util/number.js'
+import { buildExportName } from '../lib/util/download.js'
 import { fetchPluvioStation, fetchPluvioMeasures } from '../lib/api.js'
 import { buildPluvioPlotData, computeWindowedCumul, pluvioBarLabel } from '../lib/data-transform.js'
 import { useChart, useDateRange, useAutoRefresh, xAxisConfig, tooltipBaseRows } from '../lib/hooks/use-chart.js'
@@ -188,7 +189,7 @@ const PluvioChart = ({ config }) => {
 
 			return html
 		},
-		exportPrefix: `pluvio-${idStation}`,
+		exportPrefix: buildExportName('pluvio', state.stationInfo?.name, state.stationInfo?.code ?? idStation),
 		onScaleChange: handleScaleChange
 	})
 

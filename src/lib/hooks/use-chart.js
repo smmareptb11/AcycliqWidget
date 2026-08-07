@@ -2,6 +2,7 @@ import { useEffect, useRef, useCallback, useState, useMemo } from 'preact/hooks'
 import UPlot from 'uplot'
 import { shortDateTimeFormatter, fullDateTimeFormatter } from '../util/date.js'
 import { formaterNombreFr } from '../util/number.js'
+import { downloadCanvasPng } from '../util/download.js'
 import { CHART_HEIGHT, axisStroke, RANGER_FILL_ALPHA } from '../theme.js'
 
 const DEFAULT_CHART_HEIGHT = CHART_HEIGHT
@@ -364,12 +365,11 @@ export function useChart({ plotData, hours, color, buildChartOpts, formatTooltip
 	}, [plotData])
 
 	const handleExportPNG = useCallback(() => {
-		const canvas = uPlotRef.current?.root.querySelector('canvas')
-		if (!canvas) return
-		const link = document.createElement('a')
-		link.download = `acycliq-${exportPrefix}.png`
-		link.href = canvas.toDataURL('image/png')
-		link.click()
+		const root = uPlotRef.current?.root
+		if (!root) return
+		// Suit le thème plutôt que de figer du blanc dans l'export.
+		const background = getComputedStyle(root).getPropertyValue('--acq-bg').trim()
+		downloadCanvasPng(root.querySelector('canvas'), `acycliq-${exportPrefix}.png`, background || undefined)
 	}, [exportPrefix])
 
 	return { chartRef, rangerRef, uPlotRef, activeHours, handleZoom, handleExportPNG }

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, useMemo } from 'preact/hooks'
 import 'uplot/dist/uPlot.min.css'
 import { fullDateTimeFormatter } from '../lib/util/date.js'
 import { formaterNombreFr } from '../lib/util/number.js'
+import { buildExportName } from '../lib/util/download.js'
 import { fetchHydroStation, fetchHydroMeasures, fetchHydroThresholds } from '../lib/api.js'
 import { buildHydroPlotData, applyThresholdsNgf } from '../lib/data-transform.js'
 import { shouldApplyNgf } from '../lib/ngf.js'
@@ -138,7 +139,7 @@ const HydroChart = ({ config }) => {
 			if (xVal == null || yVal == null) return null
 			return tooltipBaseRows(xVal, yVal, unit)
 		},
-		exportPrefix: `hydro-${idStation}`,
+		exportPrefix: buildExportName('hydro', state.stationInfo?.name, state.stationInfo?.code ?? idStation),
 		onChartReady: () => {
 			setSeriesVisibility(new Map(
 				displayThresholds.map(th => [th.name, true])
