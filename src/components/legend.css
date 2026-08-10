@@ -45,3 +45,69 @@
 .threshold-legend-item.inactive .threshold-legend-label {
 	text-decoration: line-through;
 }
+
+/* Disposition groupée : appliquée uniquement à partir de deux catégories, via la
+   classe `grouped`. Sans elle, `.thresholds-legend` garde exactement la
+   disposition d'avant (ligne unique répartie), donc aucune régression visuelle
+   sur les stations mono-catégorie. */
+.thresholds-legend.grouped {
+	flex-direction: column;
+	align-items: stretch;
+	justify-content: flex-start;
+	gap: 0.35rem;
+}
+
+.threshold-legend-group {
+	display: flex;
+	flex-direction: column;
+	gap: 0.1rem;
+	min-width: 0;
+}
+
+.threshold-legend-items {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.15rem 0.5rem;
+	min-width: 0;
+}
+
+/* En-tête de groupe : volontairement discret par rapport aux seuils qu'il
+   chapeaute — c'est un niveau de structure, pas une entrée de légende de plus. */
+.threshold-legend-group-header {
+	align-self: flex-start;
+	background: none;
+	border: 1px solid transparent;
+	padding: 0.05rem 0.4rem;
+	font: inherit;
+	font-size: var(--acq-fs-xs);
+	font-weight: var(--acq-fw-bold);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--acq-text-muted);
+	cursor: pointer;
+	border-radius: var(--acq-radius-sm);
+	transition: opacity 0.2s ease-in-out, background 0.2s ease-in-out;
+}
+
+.threshold-legend-group-header:hover {
+	background: var(--acq-surface-muted);
+}
+
+.threshold-legend-group-header:focus-visible {
+	outline: none;
+	box-shadow: var(--acq-focus-ring);
+}
+
+/* Même vocabulaire visuel que les seuils : atténué + barré = masqué. */
+.threshold-legend-group-header.inactive {
+	opacity: 0.55;
+	color: var(--acq-text-faint);
+	text-decoration: line-through;
+}
+
+/* Panaché : ni tout affiché ni tout masqué. Le point suffit à le signaler sans
+   introduire une troisième couleur. */
+.threshold-legend-group-header.partial::after {
+	content: ' ·';
+	font-weight: var(--acq-fw-bold);
+}

@@ -78,10 +78,75 @@ npm install acycliq-widget
 | `hours` | non | number | `3` | Amplitude initiale de la fenêtre visible (en heures) |
 | `ngf` | non | boolean | `true` | Conversion en mètres NGF (si altitude disponible) — appliquée aussi aux seuils |
 | `threshold` | non | boolean | `true` | Afficher les seuils de la station |
+| `thresholdCategories` | non | string[] | toutes | Catégories de seuils proposées dans la légende (voir ci-dessous) |
+| `thresholdCategoriesDefault` | non | string[] | toutes | Catégories actives au chargement ; les autres apparaissent grisées |
 | `refresh` | non | number | `5` | Intervalle de rafraîchissement (en minutes) |
 | `src` | non | string | auto | URL de l'iframe (auto-détecté par défaut) |
 
-> Le nom de la station est affiché en titre au-dessus du graphique (récupéré via l'API).
+> Le nom de la station, la dernière valeur mesurée et sa date d'acquisition sont affichés sur une seule ligne au-dessus du graphique (récupérés via l'API).
+
+### Catégories de seuils
+
+L'API Acycliq classe chaque seuil dans une catégorie. Le widget accepte
+indifféremment le libellé ou le code numérique correspondant :
+
+| Libellé | Code API | Description |
+|---------|----------|-------------|
+| `situation` | `1` | Seuils de situation (vigilance, alerte, crise) |
+| `informatif` | `2` | Seuils informatifs (repères, atteintes remarquables) |
+| `controle` | `3` | Seuils de contrôle |
+| `autre` | *(absent)* | Seuils sans catégorie renseignée par l'API |
+
+La catégorie `autre` n'existe pas côté API : c'est le repli du widget pour les
+seuils dont la réponse ne porte pas de champ `category` — cas fréquent sur les
+stations dont les seuils n'ont pas encore été classés. Elle est proposée et
+active par défaut, afin que ces seuils continuent de s'afficher.
+
+Les deux options se combinent ainsi :
+
+- `thresholdCategories` détermine ce qui **existe** dans la légende. Une
+  catégorie absente de cette liste n'est ni tracée ni cliquable.
+- `thresholdCategoriesDefault` détermine ce qui est **actif au chargement**. Une
+  catégorie proposée mais absente de cette liste apparaît grisée et barrée dans
+  la légende, sans ligne sur le graphique ; un clic l'affiche.
+
+`thresholdCategoriesDefault` doit être un sous-ensemble de
+`thresholdCategories` : sinon la configuration est rejetée à la validation.
+
+#### Rendu dans la légende
+
+Dès que la station porte au moins deux catégories, la légende les regroupe et
+affiche un en-tête par catégorie. Cet en-tête est cliquable : il affiche ou masque
+tous les seuils de sa catégorie d'un coup. Son état est déduit de ses seuils —
+actif si tous sont tracés, grisé et barré si aucun ne l'est, marqué d'un point
+si le groupe est panaché. Un clic sur un groupe panaché l'affiche entièrement.
+
+Quand la station ne porte qu'une seule catégorie — cas de toutes les stations
+dont les seuils ne sont pas encore classés côté Acycliq — la légende reste une
+simple liste de seuils, sans en-tête.
+
+Les seuils **informatifs** sont tracés en pointillé fin, plus discret que les
+seuils de situation : ce sont des repères ponctuels, destinés à être lus par
+rapport à l'échelle de vigilance plutôt qu'à sa place. Les autres catégories
+conservent le tracé habituel (tireté, épaisseur 2, couleur de l'API).
+
+```html
+<script>
+  acycliq.hydro({
+    apiUrl: 'https://smmar.acycliq.fr/api',
+    token: 'VOTRE_TOKEN',
+    container: '#mon-graphique',
+    idStation: 12,
+    // Seuils de situation et informatifs disponibles…
+    thresholdCategories: ['situation', 'informatif'],
+    // …mais seuls les seuils de situation sont tracés au chargement.
+    thresholdCategoriesDefault: ['situation']
+  })
+</script>
+```
+
+La visibilité choisie par le visiteur est conservée d'un rafraîchissement
+automatique à l'autre.
 
 ## Paramètres — Widget Pluvio
 

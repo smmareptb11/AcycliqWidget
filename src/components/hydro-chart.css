@@ -7,15 +7,47 @@
 	font-family: var(--acq-font);
 }
 
-.acycliq-header {
+/* En-tête sur une seule ligne : nom de station, dernière valeur, date
+   d'acquisition et indicateur de rafraîchissement.
+
+   `min-width: 0` et `flex-wrap: wrap` ne sont pas cosmétiques : useChart mesure
+   la largeur disponible en remettant temporairement les canevas à `width: 0`
+   (voir measureWidth dans use-chart.js). Un en-tête imposant une largeur
+   plancher empêcherait le graphe de se rétrécir dans une iframe étroite. */
+.acycliq-headline {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 0.15rem 0.6rem;
+	min-width: 0;
 	padding: 0.25rem 0;
 }
 
+.station-name {
+	min-width: 0;
+	overflow-wrap: anywhere;
+	font-size: var(--acq-fs-title);
+	font-weight: var(--acq-fw-bold);
+	color: var(--acq-text);
+}
+
+/* La mesure est présentée comme un badge, et non comme du texte à la suite du
+   nom de station : les deux portent la même taille, la même graisse et la même
+   couleur, si bien qu'ils se liraient comme un seul bloc de texte. Le badge
+   donne sa propre surface à la donnée qu'on vient chercher, et reste un bloc
+   cohérent quand l'en-tête se replie sur deux lignes — ce qu'un simple
+   séparateur typographique ne ferait pas. */
 .last-value {
-	font-size: 1.1rem;
+	display: inline-block;
+	padding: 0.05rem 0.5rem;
+	background: var(--acq-surface-muted);
+	border: 1px solid var(--acq-border);
+	border-radius: var(--acq-radius-pill);
+	font-size: var(--acq-fs-title);
 	font-weight: var(--acq-fw-bold);
 	color: var(--acq-text);
 	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
 }
 
 .last-date {

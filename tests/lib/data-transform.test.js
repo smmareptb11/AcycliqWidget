@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildHydroPlotData, buildPluvioPlotData, computeWindowedCumul, applyThresholdsNgf, pluvioBarLabel } from '../../src/lib/data-transform.js'
+import { buildHydroPlotData, buildPluvioPlotData, computeWindowedCumul, applyThresholdsNgf, pluvioBarLabel, lastMeasuredIndex } from '../../src/lib/data-transform.js'
 
 // Timestamps réalistes : mesures hydro du 13 mars 2026, toutes les 5 minutes
 const t1 = 1773568800000 // 2026-03-13T06:00:00Z
@@ -228,5 +228,35 @@ describe('computeWindowedCumul', () => {
 		const { cumul, max } = computeWindowedCumul([], [], 0, 1000)
 		expect(cumul).toEqual([])
 		expect(max).toBe(0)
+	})
+})
+
+describe('lastMeasuredIndex', () => {
+	it('retourne le dernier index quand la série se termine par une mesure', () => {
+		expect(lastMeasuredIndex([1.2, 1.3, 1.4])).toBe(2)
+	})
+
+	it('remonte au-delà d\'un trou de mesure final', () => {
+		// Sans cela, l'en-tête « dernière valeur » disparaîtrait dès qu'une station
+		// n'émet pas sur le dernier pas de temps.
+		expect(lastMeasuredIndex([1.2, 1.3, null, null])).toBe(1)
+	})
+
+	it('ignore les trous intermédiaires', () => {
+		expect(lastMeasuredIndex([1.2, null, 1.4])).toBe(2)
+	})
+
+	it('retourne -1 quand la série ne contient que des trous', () => {
+		expect(lastMeasuredIndex([null, null])).toBe(-1)
+	})
+
+	it('retourne -1 sur une série vide ou absente', () => {
+		expect(lastMeasuredIndex([])).toBe(-1)
+		expect(lastMeasuredIndex(null)).toBe(-1)
+		expect(lastMeasuredIndex(undefined)).toBe(-1)
+	})
+
+	it('traite 0 comme une mesure valide, pas comme un trou', () => {
+		expect(lastMeasuredIndex([1.2, 0])).toBe(1)
 	})
 })

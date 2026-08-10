@@ -15,6 +15,16 @@ function prepareMeasures(measures) {
 	return { sorted, xVals }
 }
 
+/**
+ * Décalage entre l'index d'un seuil et celui de sa série uPlot : la colonne 0
+ * est l'axe x, la colonne 1 la courbe de mesure, les seuils suivent.
+ *
+ * Déclaré ici, auprès de la fonction qui décide de cette disposition : le
+ * décalage en découle, et le nommer côté consommateur laisserait l'invariant
+ * sans propriétaire.
+ */
+export const THRESHOLD_SERIES_OFFSET = 2
+
 export function buildHydroPlotData(measures, altitude, useNgf, isHeight, thresholds) {
 	const prepared = prepareMeasures(measures)
 	if (!prepared) return null
@@ -33,6 +43,25 @@ export function buildHydroPlotData(measures, altitude, useNgf, isHeight, thresho
 	)
 
 	return [xVals, yVals, ...thresholdArrays]
+}
+
+/**
+ * Index du dernier point réellement mesuré d'une colonne uPlot.
+ *
+ * Les séries hydro contiennent des trous (`null`, tracés avec `spanGaps: false`).
+ * Lire directement la dernière case ferait disparaître la dernière valeur de
+ * l'en-tête dès que la station n'a rien émis sur le dernier pas de temps, alors
+ * qu'une valeur récente existe juste avant.
+ *
+ * @param {Array<number|null>} yVals
+ * @returns {number} index du dernier point non nul, ou -1 s'il n'y en a aucun
+ */
+export function lastMeasuredIndex(yVals) {
+	if (!yVals) return -1
+	for (let i = yVals.length - 1; i >= 0; i--) {
+		if (yVals[i] != null) return i
+	}
+	return -1
 }
 
 /**

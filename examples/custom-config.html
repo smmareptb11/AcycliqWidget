@@ -175,6 +175,29 @@
 
     .hidden { display: none !important; }
 
+    /* Groupes de cases à cocher (catégories de seuils) : `label` est en colonne
+       par défaut, les cases imbriquées doivent repasser en ligne. */
+    .checkbox-set {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      font-size: 0.85rem;
+      color: var(--acq-text-muted);
+    }
+
+    .checkbox-set .options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem 0.9rem;
+    }
+
+    .checkbox-set .options label {
+      flex-direction: row;
+      align-items: center;
+      gap: 0.35rem;
+      color: var(--acq-text);
+    }
+
     .code-block {
       background: var(--acq-code-bg);
       color: var(--acq-code-fg);
@@ -277,6 +300,24 @@
           <option value="false">Non</option>
         </select>
       </label>
+      <div class="checkbox-set">
+        <span>Catégories de seuils proposées</span>
+        <div class="options">
+          <label><input type="checkbox" name="thresholdCategories" value="situation" checked /> Situation</label>
+          <label><input type="checkbox" name="thresholdCategories" value="informatif" checked /> Informatif</label>
+          <label><input type="checkbox" name="thresholdCategories" value="controle" checked /> Contrôle</label>
+          <label><input type="checkbox" name="thresholdCategories" value="autre" checked /> Non classé</label>
+        </div>
+      </div>
+      <div class="checkbox-set">
+        <span>Catégories actives au chargement</span>
+        <div class="options">
+          <label><input type="checkbox" name="thresholdCategoriesDefault" value="situation" checked /> Situation</label>
+          <label><input type="checkbox" name="thresholdCategoriesDefault" value="informatif" checked /> Informatif</label>
+          <label><input type="checkbox" name="thresholdCategoriesDefault" value="controle" checked /> Contrôle</label>
+          <label><input type="checkbox" name="thresholdCategoriesDefault" value="autre" checked /> Non classé</label>
+        </div>
+      </div>
     </div>
 
     <div class="section hidden" id="pluvio-options">
@@ -381,6 +422,12 @@
         config.dataType = parseInt(data.get('dataType'), 10);
         config.ngf = data.get('ngf') === 'true';
         config.threshold = data.get('threshold') === 'true';
+        config.thresholdCategories = data.getAll('thresholdCategories');
+        // Une catégorie active mais non proposée fait échouer la validation du
+        // widget : on intersecte pour que le playground ne puisse pas générer
+        // une configuration rejetée.
+        config.thresholdCategoriesDefault = data.getAll('thresholdCategoriesDefault')
+          .filter(function (key) { return config.thresholdCategories.indexOf(key) > -1; });
       } else {
         config.cumul = data.get('cumul') === 'true';
         config.colorCumul = data.get('colorCumul');
@@ -388,6 +435,16 @@
       }
 
       return { type: type, config: config };
+    }
+
+    var ALL_THRESHOLD_CATEGORIES = ['situation', 'informatif', 'controle', 'autre'];
+
+    // Vrai quand la liste couvre toutes les catégories : c'est la valeur par
+    // défaut du widget, inutile de l'écrire dans le snippet.
+    function isAllCategories(list) {
+      return Array.isArray(list) && ALL_THRESHOLD_CATEGORIES.every(function (key) {
+        return list.indexOf(key) > -1;
+      });
     }
 
     function generateCodeSnippet(type, config) {
@@ -404,6 +461,15 @@
         if (embedConfig.dataType === 4) delete embedConfig.dataType;
         if (embedConfig.ngf === true) delete embedConfig.ngf;
         if (embedConfig.threshold === true) delete embedConfig.threshold;
+        // Les catégories sont des tableaux : l'omission compare le contenu, pas
+        // une simple égalité de scalaire comme pour les options ci-dessus.
+        if (isAllCategories(embedConfig.thresholdCategories)) delete embedConfig.thresholdCategories;
+        if (isAllCategories(embedConfig.thresholdCategoriesDefault)) delete embedConfig.thresholdCategoriesDefault;
+        // Sans seuils affichés, les catégories n'ont plus d'objet.
+        if (embedConfig.threshold === false) {
+          delete embedConfig.thresholdCategories;
+          delete embedConfig.thresholdCategoriesDefault;
+        }
       }
       if (type === 'pluvio') {
         if (embedConfig.cumul === true) delete embedConfig.cumul;

@@ -4,10 +4,20 @@ import { fullDateTimeFormatter } from '../lib/util/date.js'
 import { formaterNombreFr } from '../lib/util/number.js'
 import { buildExportName } from '../lib/util/download.js'
 import { fetchHydroStation, fetchHydroMeasures, fetchHydroThresholds } from '../lib/api.js'
-import { buildHydroPlotData, applyThresholdsNgf } from '../lib/data-transform.js'
+import { buildHydroPlotData, applyThresholdsNgf, lastMeasuredIndex, THRESHOLD_SERIES_OFFSET } from '../lib/data-transform.js'
 import { shouldApplyNgf } from '../lib/ngf.js'
+import {
+	normalizeCategoryKeys,
+	filterByCategories,
+	withVisibility,
+	isThresholdVisible,
+	seriesStyleOf,
+	thresholdColor,
+	categoryOptionSignature,
+	thresholdKey
+} from '../lib/threshold-categories.js'
 import { useChart, useDateRange, useAutoRefresh, xAxisConfig, tooltipBaseRows } from '../lib/hooks/use-chart.js'
-import { CHART_HEIGHT, THRESHOLD_FALLBACK, axisStroke } from '../lib/theme.js'
+import { CHART_HEIGHT, axisStroke } from '../lib/theme.js'
 import { refreshStart, refreshSuccess, refreshFailure } from '../lib/refresh-state.js'
 import ChartControls from './chart-controls.jsx'
 import Legend from './legend.jsx'
@@ -20,10 +30,20 @@ const HydroChart = ({ config }) => {
 	const [state, setState] = useState({ loading: true, error: null, refreshing: false, refreshError: null, measures: null, thresholds: [], stationInfo: null })
 	const [seriesVisibility, setSeriesVisibility] = useState(new Map())
 
-	const { apiUrl, token, idStation, color = '#0284C7', dataType = 4, hours = 3, ngf: useNgf = true, threshold: showThresholds = true, refresh = 5, startDate, endDate } = config
+	const { apiUrl, token, idStation, color = '#0284C7', dataType = 4, hours = 3, ngf: useNgf = true, threshold: showThresholds = true, thresholdCategories, thresholdCategoriesDefault, refresh = 5, startDate, endDate } = config
 
 	const isHeight = dataType === 4
 	const unit = isHeight ? 'm' : 'm³/s'
+
+	// Les options de catégories arrivent sous forme de tableaux, dont l'identité
+	// change à chaque rendu si l'hôte passe un littéral. Mémoïser sur une
+	// signature textuelle évite de recalculer — et de réinitialiser les
+	// visibilités — sans changement réel.
+	const availableSignature = categoryOptionSignature(thresholdCategories)
+	const defaultSignature = categoryOptionSignature(thresholdCategoriesDefault)
+
+	const availableKeys = useMemo(() => normalizeCategoryKeys(thresholdCategories), [availableSignature])
+	const defaultKeys = useMemo(() => normalizeCategoryKeys(thresholdCategoriesDefault), [defaultSignature])
 
 	const { startMs, getEndMs } = useDateRange(startDate, endDate)
 
@@ -80,15 +100,23 @@ const HydroChart = ({ config }) => {
 	const yLabel = isHeight
 		? (applyNgf ? 'Hauteur (m NGF)' : 'Hauteur (m)')
 		: 'Débit (m³/s)'
-	const thresholdUnit = applyNgf ? 'm NGF' : unit
+	// Unité effectivement affichée : en mode NGF les valeurs tracées sont recalées
+	// sur l'altitude, l'en-tête doit donc annoncer « m NGF » comme le fait déjà
+	// l'axe Y et la légende des seuils.
+	const displayUnit = applyNgf ? 'm NGF' : unit
 
 	// Quand le NGF est actif, les seuils doivent être décalés de l'altitude de la
 	// station, tout comme la courbe de mesure — sinon les lignes de seuil et leurs
 	// valeurs affichées ne s'aligneraient pas avec les hauteurs tracées. Calculés
 	// une fois ici et réutilisés pour les données du graphe, les séries et la légende.
+	//
+	// Le filtre par catégorie s'applique APRÈS le recalage NGF, pour que celui-ci
+	// reste appliqué uniformément. Les seuils écartés ne deviennent ni colonne de
+	// plotData ni série uPlot : c'est ce filtre unique qui garantit que les deux
+	// restent alignés index par index.
 	const displayThresholds = useMemo(
-		() => applyThresholdsNgf(state.thresholds, altitude, applyNgf),
-		[state.thresholds, altitude, applyNgf]
+		() => filterByCategories(applyThresholdsNgf(state.thresholds, altitude, applyNgf), availableKeys),
+		[state.thresholds, altitude, applyNgf, availableKeys]
 	)
 
 	const plotData = useMemo(
@@ -96,16 +124,44 @@ const HydroChart = ({ config }) => {
 		[state.measures, altitude, useNgf, isHeight, displayThresholds]
 	)
 
+	// L'état de visibilité n'est réinitialisé que lorsque l'ensemble des seuils
+	// change (nouvelle station, changement de dataType ou de catégories
+	// proposées), et surtout pas à chaque reconstruction du graphe : useChart
+	// détruit et recrée l'instance uPlot à chaque rafraîchissement des mesures
+	// (toutes les 5 min par défaut). Accrocher cette réinitialisation à la
+	// construction du graphe rallumerait les seuils masqués à chaque cycle.
+	const thresholdsSignature = displayThresholds.map((th, i) => thresholdKey(th, i)).join('|')
+
+	// Signature des clés normalisées, et non de l'option brute : deux écritures
+	// différentes de la même intention — ordre permuté, doublon, valeur ignorée —
+	// donnent la même liste effective et ne doivent pas jeter les choix du
+	// visiteur. `defaultSignature` (l'option brute) les distinguerait à tort.
+	const defaultKeysSignature = defaultKeys.join('|')
+
+	// Purge les choix du visiteur, sans rien pré-remplir : une Map vide fait
+	// retomber chaque seuil sur sa catégorie par défaut via isThresholdVisible,
+	// seul propriétaire de cette règle.
+	useEffect(() => {
+		setSeriesVisibility(new Map())
+	}, [thresholdsSignature, defaultKeysSignature])
+
 	const thresholdsSeries = useMemo(() =>
-		displayThresholds.map(th => ({
-			label: th.name,
-			stroke: th.htmlColor || THRESHOLD_FALLBACK,
-			width: 2,
-			dash: [8, 4],
-			points: { show: false },
-			show: true
-		}))
-	, [displayThresholds, thresholdUnit])
+		displayThresholds.map((th, i) => {
+			const style = seriesStyleOf(th)
+			return {
+				label: th.name,
+				stroke: thresholdColor(th),
+				width: style.width,
+				// Copie : le style est figé et partagé par toutes les instances de
+				// widget, on ne transmet pas nos constantes telles quelles à uPlot.
+				dash: [...style.dash],
+				points: { show: false },
+				// Lu à chaque (re)construction du graphe via le ref buildChartOpts :
+				// c'est ce qui fait survivre un seuil masqué au rafraîchissement.
+				show: isThresholdVisible(th, i, seriesVisibility, defaultKeys)
+			}
+		})
+	, [displayThresholds, seriesVisibility, defaultKeys])
 
 	const { chartRef, rangerRef, uPlotRef, activeHours, handleZoom, handleExportPNG } = useChart({
 		plotData,
@@ -137,35 +193,67 @@ const HydroChart = ({ config }) => {
 			const xVal = u.data[0][idx]
 			const yVal = u.data[1][idx]
 			if (xVal == null || yVal == null) return null
-			return tooltipBaseRows(xVal, yVal, unit)
+			// displayUnit, pas unit : les valeurs tracées sont recalées en NGF quand
+			// le mode est actif, l'infobulle doit annoncer la même unité que l'axe Y,
+			// l'en-tête et la légende.
+			return tooltipBaseRows(xVal, yVal, displayUnit)
 		},
-		exportPrefix: buildExportName('hydro', state.stationInfo?.name, state.stationInfo?.code ?? idStation),
-		onChartReady: () => {
-			setSeriesVisibility(new Map(
-				displayThresholds.map(th => [th.name, true])
-			))
-		}
+		exportPrefix: buildExportName('hydro', state.stationInfo?.name, state.stationInfo?.code ?? idStation)
 	})
 
-	const toggleThreshold = useCallback((name) => {
-		if (!uPlotRef.current) return
-		const idx = uPlotRef.current.series.findIndex(s => s.label === name)
-		if (idx > -1) {
-			uPlotRef.current.setSeries(idx, { show: !uPlotRef.current.series[idx].show })
-			setSeriesVisibility(prev => {
-				const next = new Map(prev)
-				next.set(name, !prev.get(name))
-				return next
-			})
-		}
+	// Aligne l'instance uPlot sur l'état Preact, pour les changements de
+	// visibilité qui ne reconstruisent pas le graphe.
+	//
+	// Deux chemins écrivent `show` sur l'instance, et il faut les garder
+	// cohérents :
+	//  1. la (re)construction, où useChart relit `thresholdsSeries` via le ref
+	//     buildChartOpts — mais son effet ne dépend que de [plotData, color, hours] ;
+	//  2. cet effet, pour tout le reste — un seuil masqué ne change pas plotData,
+	//     donc rien ne serait redessiné sans lui.
+	//
+	// L'ordre compte : cet effet est déclaré APRÈS l'appel à useChart, il s'exécute
+	// donc après celui qui crée ou détruit l'instance. Déplacer l'un des deux ferait
+	// écrire sur une instance en cours de destruction.
+	useEffect(() => {
+		const u = uPlotRef.current
+		if (!u) return
+		thresholdsSeries.forEach((serie, i) => {
+			const seriesIdx = i + THRESHOLD_SERIES_OFFSET
+			if (seriesIdx >= u.series.length) return
+			if (u.series[seriesIdx].show !== serie.show) u.setSeries(seriesIdx, { show: serie.show })
+		})
+	}, [thresholdsSeries])
+
+	// Bascule par index plutôt que par recherche sur le label : l'API renvoie des
+	// seuils homonymes (id non uniques d'un dataType à l'autre), et l'ordre des
+	// séries est aligné sur displayThresholds par construction.
+	//
+	// L'état à inverser est lu dans `prev`, et non dans la variable capturée par
+	// le rendu : deux bascules émises dans le même tick liraient sinon la même
+	// Map périmée, et la seconde écraserait la première.
+	const toggleThreshold = useCallback((index) => {
+		const threshold = displayThresholds[index]
+		if (!threshold) return
+		setSeriesVisibility(prev => withVisibility(
+			prev,
+			[{ threshold, index }],
+			!isThresholdVisible(threshold, index, prev, defaultKeys)
+		))
+	}, [displayThresholds, defaultKeys])
+
+	// Bascule tout un groupe de catégorie. C'est la légende qui décide de `next`,
+	// à partir de l'état déduit du groupe : entièrement visible → tout masquer,
+	// sinon → tout afficher (un groupe panaché se complète donc au premier clic).
+	//
+	// Une seule écriture pour tout le groupe : enchaîner un setState par seuil
+	// provoquerait autant de rendus.
+	const toggleCategory = useCallback((items, next) => {
+		setSeriesVisibility(prev => withVisibility(prev, items, next))
 	}, [])
 
-	const lastValue = plotData && plotData[1].length > 0
-		? plotData[1][plotData[1].length - 1]
-		: null
-	const lastDate = plotData && plotData[0].length > 0
-		? new Date(plotData[0][plotData[0].length - 1] * 1000)
-		: null
+	const lastIndex = plotData ? lastMeasuredIndex(plotData[1]) : -1
+	const lastValue = lastIndex > -1 ? plotData[1][lastIndex] : null
+	const lastDate = lastIndex > -1 ? new Date(plotData[0][lastIndex] * 1000) : null
 
 	if (state.loading) {
 		return <LoadingState />
@@ -181,24 +269,24 @@ const HydroChart = ({ config }) => {
 
 	return (
 		<div className="acycliq-hydro">
-			{state.stationInfo?.name && (
-				<div className="acycliq-title">
-					{state.stationInfo.name}
-					<RefreshStatus
-						refreshing={state.refreshing}
-						refreshError={state.refreshError}
-						onForceRefresh={loadMeasures}
-					/>
-				</div>
-			)}
-
-			<div className="acycliq-header">
-				{lastValue != null && (
-					<span className="last-value">
-						{formaterNombreFr(lastValue)} {unit}
-						{lastDate && <span className="last-date"> — {fullDateTimeFormatter(lastDate)}</span>}
-					</span>
+			{/* Nom de station, dernière valeur et date d'acquisition sur une seule
+			    ligne : l'iframe ne dispose que d'une centaine de pixels hors canevas,
+			    chaque ligne gagnée compte. */}
+			<div className="acycliq-headline">
+				{state.stationInfo?.name && (
+					<span className="station-name">{state.stationInfo.name}</span>
 				)}
+				{lastValue != null && (
+					<span className="last-value">{formaterNombreFr(lastValue)} {displayUnit}</span>
+				)}
+				{lastDate && (
+					<span className="last-date">{fullDateTimeFormatter(lastDate)}</span>
+				)}
+				<RefreshStatus
+					refreshing={state.refreshing}
+					refreshError={state.refreshError}
+					onForceRefresh={loadMeasures}
+				/>
 			</div>
 
 			<ChartControls activeHours={activeHours} onZoom={handleZoom} onExportPNG={handleExportPNG} />
@@ -211,9 +299,11 @@ const HydroChart = ({ config }) => {
 			{showThresholds && (
 				<Legend
 					thresholds={displayThresholds}
-					unit={thresholdUnit}
+					unit={displayUnit}
 					seriesVisibility={seriesVisibility}
+					defaultKeys={defaultKeys}
 					onToggle={toggleThreshold}
+					onToggleCategory={toggleCategory}
 				/>
 			)}
 		</div>

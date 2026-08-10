@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Acycliq Widget — Catégories de seuils</title>
+	<style>
+		body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 2rem; color: #1e293b; }
+		h1 { font-size: 1.4rem; }
+		h2 { font-size: 1rem; margin-top: 2rem; }
+		p { max-width: 60ch; color: #475569; font-size: 0.9rem; line-height: 1.5; }
+	</style>
+</head>
+<body>
+	<h1>Catégories de seuils</h1>
+	<p>
+		L'API Acycliq classe les seuils en trois catégories : <strong>situation</strong> (1),
+		<strong>informatif</strong> (2) et <strong>contrôle</strong> (3). Les seuils dont la
+		réponse ne porte pas de catégorie sont regroupés sous <strong>non classé</strong>.
+	</p>
+
+	<h2>Seuils de situation seuls</h2>
+	<p>
+		Seule la catégorie <code>situation</code> est proposée : les autres seuils ne sont
+		ni tracés ni présents dans la légende.
+	</p>
+	<div id="hydro-situation" style="width: 100%; height: 500px;"></div>
+
+	<h2>Informatifs proposés mais grisés au chargement</h2>
+	<p>
+		Les seuils informatifs sont proposés dans la légende sans être tracés : ils
+		apparaissent grisés et barrés, et un clic les affiche. La visibilité choisie
+		est conservée d'un rafraîchissement automatique à l'autre.
+	</p>
+	<div id="hydro-grises" style="width: 100%; height: 500px;"></div>
+
+	<h2>Toutes catégories, légende groupée</h2>
+	<p>
+		Quand la station porte plusieurs catégories, la légende les regroupe sous un
+		en-tête cliquable qui affiche ou masque toute la catégorie d'un coup. Les seuils
+		informatifs sont tracés en pointillé fin : ce sont des repères, à lire par
+		rapport à l'échelle de vigilance et non à sa place.
+	</p>
+	<div id="hydro-groupee" style="width: 100%; height: 500px;"></div>
+
+	<script src="https://unpkg.com/acycliq-widget@latest/dist/embed/acycliq-widget.min.js"></script>
+	<script>
+		const commun = {
+			apiUrl: 'https://smmar.acycliq.fr/api',
+			token: 'VOTRE_TOKEN_ICI',
+			idStation: 12
+		}
+
+		acycliq.hydro({
+			...commun,
+			container: '#hydro-situation',
+			thresholdCategories: ['situation']
+		})
+
+		acycliq.hydro({
+			...commun,
+			container: '#hydro-grises',
+			thresholdCategories: ['situation', 'informatif'],
+			thresholdCategoriesDefault: ['situation']
+		})
+
+		acycliq.hydro({
+			...commun,
+			container: '#hydro-groupee',
+			thresholdCategoriesDefault: ['situation', 'autre']
+		})
+	</script>
+</body>
+</html>
