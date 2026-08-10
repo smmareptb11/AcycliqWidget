@@ -170,6 +170,14 @@ automatique à l'autre.
 
 > Le nom de la station est affiché en titre au-dessus du graphique (récupéré via l'API).
 
+## Export du graphique en image
+
+Chaque graphique dispose d'un bouton permettant de télécharger l'image du graphique tel qu'il est affiché (fenêtre temporelle et seuils
+visibles compris). Le fichier est nommé d'après le widget et la station, par exemple
+`acycliq-hydro-ruisseau-de-la-nere-a-villefranche-17.png`.
+
+Aucun paramètre à renseigner : la fonctionnalité est toujours disponible.
+
 ## Rafraîchissement des données
 
 Lorsque le paramètre `refresh` est renseigné (5 minutes par défaut), le graphique
