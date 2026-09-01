@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState, useMemo } from 'preact/hooks'
 import UPlot from 'uplot'
 import 'uplot/dist/uPlot.min.css'
-import { formaterNombreFr } from '../lib/util/number.js'
 import { buildExportName } from '../lib/util/download.js'
 import { fetchPluvioStation, fetchPluvioMeasures } from '../lib/api.js'
 import { buildPluvioPlotData, computeWindowedCumul, pluvioBarLabel } from '../lib/data-transform.js'
-import { useChart, useDateRange, useAutoRefresh, xAxisConfig, tooltipBaseRows } from '../lib/hooks/use-chart.js'
+import { useChart, useDateRange, useAutoRefresh, xAxisConfig } from '../lib/hooks/use-chart.js'
+import { renderTooltip } from '../lib/tooltip.js'
 import { CHART_HEIGHT, FILL_ALPHA_SUFFIX, axisStroke } from '../lib/theme.js'
 import { refreshStart, refreshSuccess, refreshFailure } from '../lib/refresh-state.js'
 import ChartControls from './chart-controls.jsx'
@@ -178,16 +178,13 @@ const PluvioChart = ({ config }) => {
 			const yVal = u.data[1][idx]
 			if (xVal == null || yVal == null) return null
 
-			let html = tooltipBaseRows(xVal, yVal, 'mm')
+			const rows = [{ color, label: barLabel, value: yVal, unit: 'mm' }]
 
 			if (cumul && u.data[2]) {
-				const cumulVal = u.data[2][idx]
-				if (cumulVal != null) {
-					html += `<div class="value">Cumul sur l'intervalle : ${formaterNombreFr(cumulVal)} mm</div>`
-				}
+				rows.push({ color: colorCumul, label: 'Cumul sur l\'intervalle', value: u.data[2][idx], unit: 'mm' })
 			}
 
-			return html
+			return renderTooltip(xVal, rows)
 		},
 		exportPrefix: buildExportName('pluvio', state.stationInfo?.name, state.stationInfo?.code ?? idStation),
 		onScaleChange: handleScaleChange

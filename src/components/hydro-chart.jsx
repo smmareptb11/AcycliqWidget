@@ -16,7 +16,8 @@ import {
 	categoryOptionSignature,
 	thresholdKey
 } from '../lib/threshold-categories.js'
-import { useChart, useDateRange, useAutoRefresh, xAxisConfig, tooltipBaseRows } from '../lib/hooks/use-chart.js'
+import { useChart, useDateRange, useAutoRefresh, xAxisConfig } from '../lib/hooks/use-chart.js'
+import { hydroTooltipRows, renderTooltip } from '../lib/tooltip.js'
 import { CHART_HEIGHT, axisStroke } from '../lib/theme.js'
 import { refreshStart, refreshSuccess, refreshFailure } from '../lib/refresh-state.js'
 import ChartControls from './chart-controls.jsx'
@@ -189,14 +190,26 @@ const HydroChart = ({ config }) => {
 				...thresholdsSeries
 			]
 		}),
+		// Les seuils sont lus dans displayThresholds plutôt que dans les colonnes
+		// plotData[i + 2] : la valeur y est déjà recalée en NGF, et le nom comme la
+		// couleur n'existent que de ce côté. La closure lit `seriesVisibility` frais
+		// sans reconstruire le graphe, useChart la gardant dans un ref.
+		//
+		// yLabel porte déjà l'unité (« Hauteur (m NGF) ») et la partage avec les
+		// seuils, tous sur la même échelle : la répéter sur chaque ligne alourdirait
+		// une infobulle qui en compte parfois dix.
 		formatTooltip: (u, idx) => {
 			const xVal = u.data[0][idx]
 			const yVal = u.data[1][idx]
 			if (xVal == null || yVal == null) return null
-			// displayUnit, pas unit : les valeurs tracées sont recalées en NGF quand
-			// le mode est actif, l'infobulle doit annoncer la même unité que l'axe Y,
-			// l'en-tête et la légende.
-			return tooltipBaseRows(xVal, yVal, displayUnit)
+			return renderTooltip(xVal, hydroTooltipRows({
+				color,
+				yLabel,
+				yValue: yVal,
+				thresholds: displayThresholds,
+				seriesVisibility,
+				defaultKeys
+			}))
 		},
 		exportPrefix: buildExportName('hydro', state.stationInfo?.name, state.stationInfo?.code ?? idStation)
 	})
