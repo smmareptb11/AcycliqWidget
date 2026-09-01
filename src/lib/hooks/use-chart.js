@@ -3,6 +3,7 @@ import UPlot from 'uplot'
 import { shortDateTimeFormatter, fullDateTimeFormatter } from '../util/date.js'
 import { formaterNombreFr } from '../util/number.js'
 import { downloadCanvasPng } from '../util/download.js'
+import { placeTooltip } from '../tooltip.js'
 import { CHART_HEIGHT, axisStroke, RANGER_FILL_ALPHA } from '../theme.js'
 
 const DEFAULT_CHART_HEIGHT = CHART_HEIGHT
@@ -217,13 +218,23 @@ export function useChart({ plotData, hours, color, buildChartOpts, formatTooltip
 						tooltip.style.display = 'block'
 						tooltip.innerHTML = html
 
+						// Dimensions mesurées, et non estimées : les constantes d'origine
+						// (160×60) étaient une approximation de la taille de l'infobulle,
+						// que rien ne tenait à jour quand son contenu changeait.
 						const bbox = u.over.getBoundingClientRect()
-						let pageX = left + bbox.left + 10
-						let pageY = top + bbox.top + 10
-						if (pageX + 160 > window.innerWidth) pageX -= 170
-						if (pageY + 60 > window.innerHeight) pageY -= 70
-						tooltip.style.left = `${pageX}px`
-						tooltip.style.top = `${pageY}px`
+						const { width, height } = tooltip.getBoundingClientRect()
+
+						const placed = placeTooltip({
+							anchorX: left + bbox.left,
+							anchorY: top + bbox.top,
+							width,
+							height,
+							viewportWidth: window.innerWidth,
+							viewportHeight: window.innerHeight
+						})
+
+						tooltip.style.left = `${placed.left}px`
+						tooltip.style.top = `${placed.top}px`
 					}
 				],
 				destroy: [
