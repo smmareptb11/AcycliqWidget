@@ -1,9 +1,9 @@
 // fullDateTimeFormatter(new Date('2026-03-13T14:30:00')) → "13/03/2026 14:30"
-export function fullDateTimeFormatter(stringDate) {
+export function fullDateTimeFormatter(date) {
 	return new Intl.DateTimeFormat('fr-FR', {
 		dateStyle: 'short',
 		timeStyle: 'short'
-	}).format(new Date(stringDate))
+	}).format(new Date(date))
 }
 
 // Hissés hors des fonctions : l'axe des graphes les rappelle sur chaque tick à chaque redessin.
