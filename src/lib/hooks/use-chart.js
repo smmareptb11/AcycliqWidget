@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback, useState, useMemo } from 'preact/hooks'
 import UPlot from 'uplot'
-import { shortDateTimeFormatter } from '../util/date.js'
+import { dayMonthFormatter, hourMinuteFormatter, monthYearFormatter } from '../util/date.js'
 import { downloadCanvasPng } from '../util/download.js'
 import { placeTooltip } from '../tooltip.js'
 import { CHART_HEIGHT, axisStroke, RANGER_FILL_ALPHA } from '../theme.js'
@@ -10,6 +10,8 @@ const DEFAULT_RANGER_HEIGHT = 28
 const RANGER_OFFSET = 100
 const MIN_WINDOW_S = 3600 // fenêtre temporelle minimale sélectionnable : 1h
 const MIN_SEL_PX = 24 // largeur de rendu minimale de la sélection du ranger (garde 1h visible + poignées séparées)
+const SECONDS_PER_DAY = 86400
+const SECONDS_PER_MONTH = 30 * SECONDS_PER_DAY // le plus petit incrément mensuel d'uPlot (d * 30)
 
 /**
  * Mesure la largeur disponible d'un conteneur sans qu'elle soit gonflée
@@ -392,6 +394,14 @@ export function xAxisConfig() {
 		stroke: axisStroke(),
 		grid: { show: false },
 		space: 70,
-		values: (u, vals) => vals.map(v => shortDateTimeFormatter(v * 1000))
+		// Le libellé ne porte que ce que l'espacement des ticks ne rend pas
+		// redondant : sans ces paliers, une plage pluriannuelle répète « 01/01 ».
+		values: (u, vals, axisIdx, foundSpace, foundIncr) => vals.map(v => {
+			const ms = v * 1000
+			if (foundIncr >= SECONDS_PER_MONTH) return monthYearFormatter(ms)
+			if (foundIncr >= SECONDS_PER_DAY) return dayMonthFormatter(ms)
+			// uPlot empile les libellés d'axe en les découpant sur \n.
+			return `${dayMonthFormatter(ms)}\n${hourMinuteFormatter(ms)}`
+		})
 	}
 }
