@@ -93,10 +93,30 @@
 	opacity: 0.75;
 }
 
-.acycliq-tooltip .value {
-	font-weight: var(--acq-fw-bold);
+/* Grille à trois colonnes : le témoin et les valeurs restent alignés d'une
+   ligne à l'autre, quelle que soit la longueur des noms de seuils. */
+.acycliq-tooltip .row {
+	display: grid;
+	grid-template-columns: auto 1fr auto;
+	align-items: center;
+	gap: 0 0.5rem;
 	white-space: nowrap;
+}
+
+.acycliq-tooltip .swatch {
+	width: 8px;
+	height: 8px;
+	border-radius: 2px;
+}
+
+.acycliq-tooltip .label {
+	opacity: 0.85;
+}
+
+.acycliq-tooltip .num {
+	font-weight: var(--acq-fw-bold);
 	font-variant-numeric: tabular-nums;
+	text-align: right;
 }
 
 /* --- États : chargement / erreur / vide (partagés hydro + pluvio) --- */

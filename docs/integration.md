@@ -130,6 +130,14 @@ seuils de situation : ce sont des repères ponctuels, destinés à être lus par
 rapport à l'échelle de vigilance plutôt qu'à sa place. Les autres catégories
 conservent le tracé habituel (tireté, épaisseur 2, couleur de l'API).
 
+#### Rendu dans l'infobulle
+
+Au survol du graphique, l'infobulle rappelle la date, la mesure, puis chaque
+seuil actuellement tracé — nom et valeur, précédés du témoin de sa couleur.
+Masquer une catégorie dans la légende la retire donc aussi de l'infobulle :
+c'est le moyen de raccourcir la liste sur les stations qui portent de nombreux
+repères de crue.
+
 ```html
 <script>
   acycliq.hydro({
