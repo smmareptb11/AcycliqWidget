@@ -31,10 +31,6 @@ else {
 			component: <PluvioChart config={applyPluvioDefaults({ apiUrl, token, idStation: 719, container: '#app' })} />
 		},
 		{
-			title: 'Échec de chargement — station inexistante (id 999999)',
-			component: <HydroChart config={applyHydroDefaults({ apiUrl, token, idStation: 999999, container: '#app' })} />
-		},
-		{
 			title: 'Pluviométrie — config max (6h, sans cumul, couleur custom, refresh 1min)',
 			component: <PluvioChart config={applyPluvioDefaults({ apiUrl, token, idStation: 719, container: '#app', hours: 6, cumul: false, color: '#E91E63', refresh: 1 })} />
 		},
