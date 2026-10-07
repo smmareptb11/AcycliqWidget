@@ -1,6 +1,6 @@
 const headers = (token) => ({
-	Authorization: `Bearer ${token}`,
-	'Content-Type': 'application/json'
+	'Content-Type': 'application/json',
+	...(token && { Authorization: `Bearer ${token}` })
 })
 
 async function handleResponse(res, context) {

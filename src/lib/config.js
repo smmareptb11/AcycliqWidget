@@ -65,7 +65,6 @@ export function validateHydroConfig(config) {
 	}
 
 	if (!config.apiUrl) errors.push('"apiUrl" est obligatoire.')
-	if (!config.token) errors.push('"token" est obligatoire.')
 	if (!config.container) errors.push('"container" est obligatoire.')
 	if (!config.idStation) errors.push('"idStation" est obligatoire.')
 
@@ -107,7 +106,6 @@ export function validatePluvioConfig(config) {
 	}
 
 	if (!config.apiUrl) errors.push('"apiUrl" est obligatoire.')
-	if (!config.token) errors.push('"token" est obligatoire.')
 	if (!config.container) errors.push('"container" est obligatoire.')
 	if (!config.idStation) errors.push('"idStation" est obligatoire.')
 

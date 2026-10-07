@@ -39,10 +39,8 @@ describe('validateHydroConfig', () => {
 		expect(errors.some(e => e.includes('apiUrl'))).toBe(true)
 	})
 
-	it('requires token', () => {
-		const { valid, errors } = validateHydroConfig({ ...validHydroConfig, token: '' })
-		expect(valid).toBe(false)
-		expect(errors.some(e => e.includes('token'))).toBe(true)
+	it('accepte une configuration sans jeton', () => {
+		expect(validateHydroConfig({ ...validHydroConfig, token: undefined }).valid).toBe(true)
 	})
 
 	it('requires container', () => {
@@ -168,10 +166,13 @@ describe('validatePluvioConfig', () => {
 		expect(validatePluvioConfig(validPluvioConfig).valid).toBe(true)
 	})
 
+	it('accepte une configuration sans jeton', () => {
+		expect(validatePluvioConfig({ ...validPluvioConfig, token: undefined }).valid).toBe(true)
+	})
+
 	it('requires all mandatory fields', () => {
 		const { errors } = validatePluvioConfig({})
 		expect(errors.some(e => e.includes('apiUrl'))).toBe(true)
-		expect(errors.some(e => e.includes('token'))).toBe(true)
 		expect(errors.some(e => e.includes('container'))).toBe(true)
 		expect(errors.some(e => e.includes('idStation'))).toBe(true)
 	})
