@@ -249,7 +249,7 @@
         <input type="text" name="apiUrl" value="https://smmar.acycliq.fr/api" />
       </label>
       <label>
-        Token
+        Token (facultatif)
         <input type="text" name="token" placeholder="Votre token Bearer" />
       </label>
     </div>
@@ -454,6 +454,7 @@
 
       // Les <input type="color"> renvoient toujours un hex minuscule : on
       // compare sans tenir compte de la casse pour omettre les valeurs par défaut.
+      if (!embedConfig.token) delete embedConfig.token;
       if ((embedConfig.color || '').toUpperCase() === '#0284C7') delete embedConfig.color;
       if (embedConfig.hours === 3) delete embedConfig.hours;
       if (embedConfig.refresh === 5) delete embedConfig.refresh;
@@ -496,8 +497,8 @@
       var type = result.type;
       var config = result.config;
 
-      if (!config.token) {
-        widgetContainer.innerHTML = '<p style="padding:1rem; color:#900;">Veuillez renseigner un token API.</p>';
+      if (!config.apiUrl) {
+        widgetContainer.innerHTML = '<p style="padding:1rem; color:#900;">Veuillez renseigner l\'URL de l\'API.</p>';
         return;
       }
 
