@@ -3,9 +3,13 @@ const headers = (token) => ({
 	...(token && { Authorization: `Bearer ${token}` })
 })
 
-async function handleResponse(res, context) {
+async function handleResponse(res, subject, token) {
+	if (res.status === 401 || res.status === 403) {
+		throw new Error(`Accès à l'API refusé : jeton manquant ou invalide (HTTP ${res.status})`)
+	}
 	if (!res.ok) {
-		throw new Error(`${context} (HTTP ${res.status})`)
+		const detail = token ? '' : ', aucun jeton fourni'
+		throw new Error(`Impossible de récupérer ${subject} (HTTP ${res.status}${detail})`)
 	}
 	return res.json()
 }
@@ -14,7 +18,7 @@ export async function fetchHydroStation(apiUrl, token, stationId) {
 	const res = await fetch(`${apiUrl}/hydrologicalStation/${stationId}`, {
 		headers: headers(token)
 	})
-	return handleResponse(res, `Station hydrométrique ${stationId} introuvable`)
+	return handleResponse(res, `la station hydrométrique ${stationId}`, token)
 }
 
 export async function fetchHydroMeasures(apiUrl, token, params) {
@@ -23,21 +27,21 @@ export async function fetchHydroMeasures(apiUrl, token, params) {
 		headers: headers(token),
 		body: JSON.stringify(params)
 	})
-	return handleResponse(res, `Impossible de récupérer les mesures de la station ${params.stationId}`)
+	return handleResponse(res, `les mesures de la station ${params.stationId}`, token)
 }
 
 export async function fetchHydroThresholds(apiUrl, token, stationId) {
 	const res = await fetch(`${apiUrl}/hydrologicalStation/${stationId}/threshold`, {
 		headers: headers(token)
 	})
-	return handleResponse(res, `Impossible de récupérer les seuils de la station ${stationId}`)
+	return handleResponse(res, `les seuils de la station ${stationId}`, token)
 }
 
 export async function fetchPluvioStation(apiUrl, token, stationId) {
 	const res = await fetch(`${apiUrl}/pluviometer/${stationId}`, {
 		headers: headers(token)
 	})
-	return handleResponse(res, `Station pluviométrique ${stationId} introuvable`)
+	return handleResponse(res, `la station pluviométrique ${stationId}`, token)
 }
 
 export async function fetchPluvioMeasures(apiUrl, token, params) {
@@ -46,5 +50,5 @@ export async function fetchPluvioMeasures(apiUrl, token, params) {
 		headers: headers(token),
 		body: JSON.stringify(params)
 	})
-	return handleResponse(res, `Impossible de récupérer les mesures pluvio de la station ${params.stationId}`)
+	return handleResponse(res, `les mesures pluvio de la station ${params.stationId}`, token)
 }

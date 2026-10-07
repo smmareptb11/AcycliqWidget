@@ -17,7 +17,7 @@ const calls = [
 	['fetchPluvioMeasures', token => fetchPluvioMeasures(API_URL, token, { stationId: 719 })]
 ]
 
-describe('en-têtes des requêtes API', () => {
+describe('requêtes API', () => {
 	let fetchMock
 
 	beforeEach(() => {
@@ -44,4 +44,23 @@ describe('en-têtes des requêtes API', () => {
 		expect(sentHeaders().Authorization).toBe('Bearer abc123')
 	})
 
+	const respondWith = status => fetchMock.mockResolvedValue({ ok: status < 400, status, json: () => Promise.resolve({}) })
+
+	it.each([401, 403])('%i : signale un accès refusé plutôt qu\'une ressource absente', async (status) => {
+		respondWith(status)
+		await expect(fetchHydroStation(API_URL, undefined, 17))
+			.rejects.toThrow(`Accès à l'API refusé : jeton manquant ou invalide (HTTP ${status})`)
+	})
+
+	it('autre erreur : nomme la ressource et le statut', async () => {
+		respondWith(500)
+		await expect(fetchHydroStation(API_URL, 'abc123', 17))
+			.rejects.toThrow(/^Impossible de récupérer la station hydrométrique 17 \(HTTP 500\)$/)
+	})
+
+	it('autre erreur sans jeton : le signale', async () => {
+		respondWith(500)
+		await expect(fetchHydroStation(API_URL, undefined, 17))
+			.rejects.toThrow('Impossible de récupérer la station hydrométrique 17 (HTTP 500, aucun jeton fourni)')
+	})
 })
