@@ -24,7 +24,7 @@ Développé pour le [SMMAR](https://www.smmar.fr) (Syndicat Mixte des Milieux Aq
 
 ```bash
 cp .env.sample .env
-# Renseigner VITE_ACYCLIQ_TOKEN et VITE_ACYCLIQ_API_URL dans .env
+# Renseigner VITE_ACYCLIQ_API_URL, et VITE_ACYCLIQ_TOKEN si l'API l'exige, dans .env
 yarn install
 yarn dev
 ```

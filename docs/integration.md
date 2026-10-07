@@ -10,8 +10,8 @@ Widget graphique embarquable pour la visualisation des données hydrométriques 
 
 ## Prérequis
 
-- Un **token d'accès** à l'API Acycliq (Bearer Token)
 - L'URL de l'API (par défaut : `https://smmar.acycliq.fr/api`)
+- Si l'API l'exige, un **token d'accès** (Bearer Token)
 
 ## Installation
 
@@ -66,9 +66,9 @@ npm install acycliq-widget
 | Paramètre | Obligatoire | Type | Default | Description |
 |-----------|------------|------|---------|-------------|
 | `apiUrl` | oui | string | — | URL de base de l'API Acycliq |
-| `token` | oui | string | — | Token Bearer pour l'authentification |
 | `container` | oui | string | — | Sélecteur CSS du conteneur |
 | `idStation` | oui | number | — | Identifiant de la station hydrologique |
+| `token` | non | string | — | Token Bearer envoyé dans l'en-tête `Authorization`. Sans token, les requêtes partent sans en-tête d'authentification |
 | `width` | non | string | `'100%'` | Largeur de l'iframe |
 | `height` | non | string | `'100%'` | Hauteur de l'iframe |
 | `color` | non | string | `'#0284C7'` | Couleur principale du graphique |
@@ -161,9 +161,9 @@ automatique à l'autre.
 | Paramètre | Obligatoire | Type | Default | Description |
 |-----------|------------|------|---------|-------------|
 | `apiUrl` | oui | string | — | URL de base de l'API Acycliq |
-| `token` | oui | string | — | Token Bearer pour l'authentification |
 | `container` | oui | string | — | Sélecteur CSS du conteneur |
 | `idStation` | oui | number | — | Identifiant de la station pluviométrique |
+| `token` | non | string | — | Token Bearer envoyé dans l'en-tête `Authorization`. Sans token, les requêtes partent sans en-tête d'authentification |
 | `width` | non | string | `'100%'` | Largeur de l'iframe |
 | `height` | non | string | `'100%'` | Hauteur de l'iframe |
 | `color` | non | string | `'#0284C7'` | Couleur des barres de pluviométrie |

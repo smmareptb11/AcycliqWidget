@@ -8,13 +8,14 @@ import './dev.css'
 const apiUrl = import.meta.env.VITE_ACYCLIQ_API_URL
 const token = import.meta.env.VITE_ACYCLIQ_TOKEN
 
-if (!apiUrl || !token) {
+if (!apiUrl) {
 	render(
 		<div className="acycliq-config-error">
 			<h2>Configuration manquante</h2>
 			<p>Créez un fichier <code>.env</code> à la racine du projet avec :</p>
-			<pre>{`VITE_ACYCLIQ_TOKEN=votre_token_ici
-VITE_ACYCLIQ_API_URL=https://smmar.acycliq.fr/api`}</pre>
+			<pre>{`VITE_ACYCLIQ_API_URL=https://smmar.acycliq.fr/api
+VITE_ACYCLIQ_TOKEN=votre_token_ici`}</pre>
+			<p>Le token est facultatif si l'URL donne accès à l'API sans authentification.</p>
 			<p>Puis relancez <code>yarn dev</code>.</p>
 		</div>,
 		document.getElementById('app')
