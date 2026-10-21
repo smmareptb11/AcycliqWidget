@@ -50,6 +50,35 @@
 	white-space: nowrap;
 }
 
+/* Le soulignement pointillé et le chevron signalent qu'on peut changer
+   l'unité. */
+.unit-choice {
+	position: relative;
+	display: inline-block;
+	border-bottom: 1px dashed var(--acq-text-muted);
+	cursor: pointer;
+}
+
+.unit-choice::after {
+	content: '▾';
+	margin-left: 0.15em;
+	font-size: 0.8em;
+	color: var(--acq-text-muted);
+}
+
+.unit-select {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	opacity: 0;
+	font: inherit;
+	cursor: pointer;
+}
+
+.unit-choice:has(.unit-select:focus-visible) {
+	box-shadow: var(--acq-focus-ring);
+}
+
 .last-date {
 	font-size: var(--acq-fs-sm);
 	font-weight: normal;

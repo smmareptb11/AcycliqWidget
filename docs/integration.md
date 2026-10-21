@@ -76,7 +76,8 @@ npm install acycliq-widget
 | `startDate` | non | string | Now - 30j | Date de début (ISO 8601) |
 | `endDate` | non | string | Now | Date de fin (ISO 8601) |
 | `hours` | non | number | `3` | Amplitude initiale de la fenêtre visible (en heures) |
-| `ngf` | non | boolean | `true` | Conversion en mètres NGF (si altitude disponible) — appliquée aussi aux seuils |
+| `ngf` | non | boolean | `true` | Unité au chargement : mètres NGF (si altitude disponible) ou mètres. La conversion s'applique aussi aux seuils |
+| `unitSelector` | non | boolean | `true` | Permet au visiteur de passer de m à m NGF en cliquant sur l'unité de la dernière valeur. Proposé seulement pour une hauteur dont l'altitude est connue. `false` fige l'unité choisie par `ngf` |
 | `threshold` | non | boolean | `true` | Afficher les seuils de la station |
 | `thresholdCategories` | non | string[] | toutes | Catégories de seuils proposées dans la légende (voir ci-dessous) |
 | `thresholdCategoriesDefault` | non | string[] | toutes | Catégories actives au chargement ; les autres apparaissent grisées |
@@ -154,7 +155,8 @@ repères de crue.
 ```
 
 La visibilité choisie par le visiteur est conservée d'un rafraîchissement
-automatique à l'autre.
+automatique à l'autre, et quand il change d'unité. L'unité qu'il a choisie est
+elle aussi conservée au rafraîchissement.
 
 ## Paramètres — Widget Pluvio
 
