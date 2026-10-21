@@ -9,6 +9,8 @@ import {
 	groupByCategory,
 	groupVisibilityState,
 	seriesStyleOf,
+	thresholdsSignature,
+	ALL_CATEGORY_KEYS,
 	GROUP_ACTIVE,
 	GROUP_INACTIVE,
 	GROUP_PARTIAL
@@ -253,6 +255,17 @@ describe('hydro pipeline : filtrage des seuils par catégorie', () => {
 
 		expect(isThresholdVisible(displayThresholds[0], 0, new Map(), defaultKeys)).toBe(true)   // Vigilance
 		expect(isThresholdVisible(displayThresholds[1], 1, new Map(), defaultKeys)).toBe(false)  // Atteinte du Plateau
+	})
+
+	it('un changement d\'unité garde les seuils masqués par le visiteur', () => {
+		// La visibilité est purgée quand la signature des seuils change : elle ne
+		// doit donc pas dépendre de la valeur, que le passage en NGF décale.
+		const enMetres = pipeline(baseConfig).displayThresholds
+		const enNgf = pipeline({ ...baseConfig, ngf: true }).displayThresholds
+		expect(thresholdsSignature(enNgf)).toBe(thresholdsSignature(enMetres))
+
+		const masque = withVisibility(new Map(), [{ threshold: enMetres[0], index: 0 }], false)
+		expect(isThresholdVisible(enNgf[0], 0, masque, ALL_CATEGORY_KEYS)).toBe(false)
 	})
 
 	it('valide une config restreignant les catégories', () => {
