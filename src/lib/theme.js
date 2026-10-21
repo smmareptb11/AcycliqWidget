@@ -10,8 +10,13 @@
  * (défauts surchargeables par embed) et transitent en props.
  */
 
-// Hauteur du canevas principal du graphe (px).
+// Hauteur du canevas principal du graphe (px) hors iframe : dans l'iframe, il
+// s'ajuste à la hauteur disponible.
 export const CHART_HEIGHT = 300
+
+// Plancher du canevas ajusté à l'iframe (px) : plus bas, le graphique n'est
+// plus lisible, et l'iframe défile plutôt.
+export const MIN_CHART_HEIGHT = 120
 
 // Couleur des axes/libellés du canevas (le canevas ne peut pas lire les
 // variables CSS). Le gris clair par défaut d'uPlot devient illisible sur un

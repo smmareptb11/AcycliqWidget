@@ -70,7 +70,7 @@ npm install acycliq-widget
 | `idStation` | oui | number | — | Identifiant de la station hydrologique |
 | `token` | non | string | — | Token Bearer envoyé dans l'en-tête `Authorization`. Sans token, les requêtes partent sans en-tête d'authentification |
 | `width` | non | string | `'100%'` | Largeur de l'iframe |
-| `height` | non | string | `'100%'` | Hauteur de l'iframe |
+| `height` | non | string | `'100%'` | Hauteur de l'iframe. Le graphique s'ajuste pour que le widget l'occupe exactement (voir « Hauteur du widget ») |
 | `color` | non | string | `'#0284C7'` | Couleur principale du graphique |
 | `dataType` | non | number | `4` | Type de données : `4` (hauteur) ou `5` (débit) |
 | `startDate` | non | string | Now - 30j | Date de début (ISO 8601) |
@@ -165,7 +165,7 @@ automatique à l'autre.
 | `idStation` | oui | number | — | Identifiant de la station pluviométrique |
 | `token` | non | string | — | Token Bearer envoyé dans l'en-tête `Authorization`. Sans token, les requêtes partent sans en-tête d'authentification |
 | `width` | non | string | `'100%'` | Largeur de l'iframe |
-| `height` | non | string | `'100%'` | Hauteur de l'iframe |
+| `height` | non | string | `'100%'` | Hauteur de l'iframe. Le graphique s'ajuste pour que le widget l'occupe exactement (voir « Hauteur du widget ») |
 | `color` | non | string | `'#0284C7'` | Couleur des barres de pluviométrie |
 | `colorCumul` | non | string | `'#EA580C'` | Couleur de la courbe de cumul de pluie |
 | `startDate` | non | string | Now - 30j | Date de début (ISO 8601) |
@@ -177,6 +177,24 @@ automatique à l'autre.
 | `src` | non | string | auto | URL de l'iframe (auto-détecté par défaut) |
 
 > Le nom de la station est affiché en titre au-dessus du graphique (récupéré via l'API).
+
+## Hauteur du widget
+
+Le widget occupe toute la hauteur de son iframe, sans barre de défilement : le
+graphique prend la place que laissent l'en-tête, les boutons, la frise et la
+légende. Il rétrécit dans une iframe basse et grandit dans une iframe haute, et
+suit les changements de taille du conteneur.
+
+Donnez donc une hauteur au conteneur (ou passez `height`) : c'est elle qui
+décide de la taille du graphique. Le graphique ne descend pas sous 120 px ;
+en dessous, l'iframe défile. Une station avec beaucoup de seuils a une légende
+plus haute et laisse donc moins de place au graphique.
+
+Cas limite, avec les barres de défilement classiques (Windows) : si l'iframe
+passe sous cette hauteur minimale puis est agrandie juste au-dessus, la barre
+de défilement peut rester affichée jusqu'au rafraîchissement suivant.
+
+Voir `examples/compact.html`.
 
 ## Export du graphique en image
 
