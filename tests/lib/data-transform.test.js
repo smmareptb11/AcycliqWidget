@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildHydroPlotData, buildPluvioPlotData, computeWindowedCumul, applyThresholdsNgf, pluvioBarLabel, lastMeasuredIndex } from '../../src/lib/data-transform.js'
+import { buildHydroPlotData, buildPluvioPlotData, computeWindowedCumul, applyThresholdsNgf, thresholdsOfDataType, pluvioBarLabel, lastMeasuredIndex } from '../../src/lib/data-transform.js'
 
 // Timestamps réalistes : mesures hydro du 13 mars 2026, toutes les 5 minutes
 const t1 = 1773568800000 // 2026-03-13T06:00:00Z
@@ -162,6 +162,24 @@ describe('applyThresholdsNgf', () => {
 	it('handles null/undefined thresholds', () => {
 		expect(applyThresholdsNgf(null, 42.35, true)).toEqual([])
 		expect(applyThresholdsNgf(undefined, 42.35, true)).toEqual([])
+	})
+})
+
+describe('thresholdsOfDataType', () => {
+	// L'API renvoie les seuils de hauteur et de débit ensemble, dataType parfois en chaîne.
+	const thresholds = [
+		{ name: 'Vigilance', value: 2.5, dataType: 4 },
+		{ name: 'Alerte', value: 3.8, dataType: '4' },
+		{ name: 'Débit seuil', value: 50, dataType: 5 }
+	]
+
+	it('garde les seuils de la donnée affichée, dataType numérique ou chaîne', () => {
+		expect(thresholdsOfDataType(thresholds, 4).map(t => t.name)).toEqual(['Vigilance', 'Alerte'])
+		expect(thresholdsOfDataType(thresholds, 5).map(t => t.name)).toEqual(['Débit seuil'])
+	})
+
+	it('accepte une liste absente', () => {
+		expect(thresholdsOfDataType(undefined, 4)).toEqual([])
 	})
 })
 

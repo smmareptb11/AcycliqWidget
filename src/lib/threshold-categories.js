@@ -193,14 +193,15 @@ export function filterByCategories(thresholds, keys) {
  * Le `name` seul ne suffit pas : l'API renvoie des `id` non uniques d'un
  * `dataType` à l'autre, et rien ne garantit l'unicité des noms au sein d'une
  * station. L'index, lui, est la position du seuil dans la liste affichée : il
- * rend la clé unique par construction.
+ * rend la clé unique par construction. Le `dataType` empêche qu'un seuil de
+ * débit hérite, après une bascule, du choix fait sur son homologue de hauteur.
  *
  * @param {object} threshold
  * @param {number} index - position dans la liste des seuils affichés
  * @returns {string}
  */
 export function thresholdKey(threshold, index) {
-	return `${threshold?.id ?? 'na'}:${index}:${threshold?.name ?? ''}`
+	return `${threshold?.id ?? 'na'}:${threshold?.dataType ?? ''}:${index}:${threshold?.name ?? ''}`
 }
 
 /**

@@ -1,30 +1,19 @@
+import SegmentedControl from './segmented-control.jsx'
 import './chart-controls.css'
 
 const ZOOM_LEVELS = [
-	{ label: '1h', hours: 1 },
-	{ label: '2h', hours: 2 },
-	{ label: '3h', hours: 3 },
-	{ label: '6h', hours: 6 },
-	{ label: '12h', hours: 12 },
-	{ label: '1j', hours: 24 },
-	{ label: 'Tout', hours: null }
+	{ label: '1h', value: 1 },
+	{ label: '2h', value: 2 },
+	{ label: '3h', value: 3 },
+	{ label: '6h', value: 6 },
+	{ label: '12h', value: 12 },
+	{ label: '1j', value: 24 },
+	{ label: 'Tout', value: null }
 ]
 
 const ChartControls = ({ activeHours, onZoom, onExportPNG }) => (
 	<div className="chart-controls">
-		<div className="zoom-buttons" role="group" aria-label="Plage de temps">
-			{ZOOM_LEVELS.map(level => (
-				<button
-					key={level.label}
-					type="button"
-					className={`zoom-btn${level.hours === activeHours ? ' active' : ''}`}
-					aria-pressed={level.hours === activeHours}
-					onClick={() => onZoom(level.hours)}
-				>
-					{level.label}
-				</button>
-			))}
-		</div>
+		<SegmentedControl options={ZOOM_LEVELS} value={activeHours} onChange={onZoom} ariaLabel="Plage de temps" />
 		<button
 			type="button"
 			className="export-btn"

@@ -83,6 +83,15 @@ export function applyThresholdsNgf(thresholds, altitude, applyNgf) {
 }
 
 /**
+ * Seuils d'une donnée (4 hauteur, 5 débit) parmi ceux de la station, que l'API
+ * renvoie ensemble. `dataType` arrive parfois en chaîne, d'où la comparaison
+ * par `String()`.
+ */
+export function thresholdsOfDataType(thresholds, dataType) {
+	return (thresholds || []).filter(th => String(th.dataType) === String(dataType))
+}
+
+/**
  * Libellé de la série de barres de pluie, reflétant l'agrégation choisie :
  * une somme journalière (`SUM_DAY`) cumule sur une journée, les autres modes
  * restent horaires.
