@@ -7,7 +7,7 @@
 }
 
 /* Contrôle segmenté : un seul conteneur pilule, boutons jointifs. */
-.zoom-buttons {
+.segmented {
 	display: inline-flex;
 	flex-wrap: wrap;
 	padding: 2px;
@@ -16,7 +16,7 @@
 	border-radius: var(--acq-radius-pill);
 }
 
-.zoom-btn {
+.segmented-btn {
 	background: transparent;
 	border: none;
 	border-radius: var(--acq-radius-pill);
@@ -28,16 +28,16 @@
 	transition: color 0.15s ease, background 0.15s ease;
 }
 
-.zoom-btn:hover {
+.segmented-btn:hover {
 	color: var(--acq-text);
 }
 
-.zoom-btn.active {
+.segmented-btn.active {
 	background: var(--acq-primary);
 	color: #fff;
 }
 
-.zoom-btn:focus-visible,
+.segmented-btn:focus-visible,
 .chart-controls .export-btn:focus-visible {
 	outline: none;
 	box-shadow: var(--acq-focus-ring);
