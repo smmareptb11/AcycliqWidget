@@ -52,6 +52,10 @@ else {
 			// rester affichés via la catégorie « non classé » (non-régression).
 			title: 'Hydrométrie — seuils sans catégorie (station 20, catégorie « non classé »)',
 			component: <HydroChart config={applyHydroDefaults({ apiUrl, token, idStation: 20, container: '#app' })} />
+		},
+		{
+			title: 'Hydrométrie — bascule hauteur / débit (station 17)',
+			component: <HydroChart config={applyHydroDefaults({ apiUrl, token, idStation: 17, container: '#app', dataTypeToggle: true })} />
 		}
 	]
 

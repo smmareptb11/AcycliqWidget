@@ -144,6 +144,16 @@ describe('validateHydroConfig', () => {
 		const { valid } = validateHydroConfig(applyHydroDefaults(validHydroConfig))
 		expect(valid).toBe(true)
 	})
+
+	it('accepte dataTypeToggle booléen', () => {
+		expect(validateHydroConfig({ ...validHydroConfig, dataTypeToggle: true }).valid).toBe(true)
+	})
+
+	it('rejette un dataTypeToggle non booléen', () => {
+		const { valid, errors } = validateHydroConfig({ ...validHydroConfig, dataTypeToggle: 1 })
+		expect(valid).toBe(false)
+		expect(errors[0]).toContain('dataTypeToggle')
+	})
 })
 
 describe('applyHydroDefaults', () => {
@@ -158,6 +168,11 @@ describe('applyHydroDefaults', () => {
 	it('laisse la config de l\'hôte primer sur les défauts', () => {
 		const config = applyHydroDefaults({ ...validHydroConfig, thresholdCategoriesDefault: ['situation'] })
 		expect(config.thresholdCategoriesDefault).toEqual(['situation'])
+	})
+
+	it('n\'active pas la bascule hauteur/débit par défaut', () => {
+		// Les ouvrages n'ont pas de débit et l'API ne permet pas de le savoir.
+		expect(applyHydroDefaults(validHydroConfig).dataTypeToggle).toBe(false)
 	})
 })
 

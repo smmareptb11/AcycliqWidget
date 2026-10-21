@@ -5,6 +5,7 @@ const HYDRO_DEFAULTS = {
 	height: '100%',
 	color: '#0284C7',
 	dataType: 4,
+	dataTypeToggle: false,
 	hours: 3,
 	ngf: true,
 	threshold: true,
@@ -70,6 +71,10 @@ export function validateHydroConfig(config) {
 
 	if (config.dataType !== undefined && ![4, 5].includes(config.dataType)) {
 		errors.push('"dataType" doit être 4 (hauteur) ou 5 (débit).')
+	}
+
+	if (config.dataTypeToggle !== undefined && typeof config.dataTypeToggle !== 'boolean') {
+		errors.push('"dataTypeToggle" doit être un booléen.')
 	}
 
 	if (config.hours !== undefined && (typeof config.hours !== 'number' || config.hours < 1)) {

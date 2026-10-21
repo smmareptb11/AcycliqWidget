@@ -72,7 +72,8 @@ npm install acycliq-widget
 | `width` | non | string | `'100%'` | Largeur de l'iframe |
 | `height` | non | string | `'100%'` | Hauteur de l'iframe |
 | `color` | non | string | `'#0284C7'` | Couleur principale du graphique |
-| `dataType` | non | number | `4` | Type de données : `4` (hauteur) ou `5` (débit) |
+| `dataType` | non | number | `4` | Donnée affichée au chargement : `4` (hauteur) ou `5` (débit) |
+| `dataTypeToggle` | non | boolean | `false` | Affiche en haut à droite une bascule « Hauteur / Débit ». À activer seulement sur les stations qui mesurent un débit (cours d'eau) : les ouvrages n'en ont pas, et l'API ne permet pas de le savoir |
 | `startDate` | non | string | Now - 30j | Date de début (ISO 8601) |
 | `endDate` | non | string | Now | Date de fin (ISO 8601) |
 | `hours` | non | number | `3` | Amplitude initiale de la fenêtre visible (en heures) |
@@ -182,7 +183,8 @@ automatique à l'autre.
 
 Chaque graphique dispose d'un bouton permettant de télécharger l'image du graphique tel qu'il est affiché (fenêtre temporelle et seuils
 visibles compris). Le fichier est nommé d'après le widget et la station, par exemple
-`acycliq-hydro-ruisseau-de-la-nere-a-villefranche-17.png`.
+`acycliq-hydro-ruisseau-de-la-nere-a-villefranche-17.png`. Un graphique de débit
+est préfixé `acycliq-hydro-debit-`.
 
 Aucun paramètre à renseigner : la fonctionnalité est toujours disponible.
 
