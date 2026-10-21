@@ -87,6 +87,38 @@ export function clampWindow(xVals, min, max, edge) {
 	return { min, max }
 }
 
+/**
+ * Fenêtre [min, max] (secondes) à rétablir quand le graphe se reconstruit,
+ * d'après le choix du visiteur : une durée (`hours`, `null` pour « Tout »),
+ * recalée sur la dernière mesure, ou une période réglée à la réglette
+ * (`min`, `max`). Celle-ci suit les nouvelles mesures si elle touchait la fin
+ * des données (`atEnd`), comme le ferait une durée.
+ */
+export function viewWindow(xVals, view) {
+	const lo = xVals[0]
+	const hi = xVals[xVals.length - 1]
+	if ('hours' in view) {
+		return { min: view.hours ? hi - view.hours * 3600 : lo, max: hi }
+	}
+	const min = view.atEnd ? hi - (view.max - view.min) : view.min
+	const max = view.atEnd ? hi : view.max
+	return clampWindow(xVals, min, max, 'body')
+}
+
+/**
+ * Choix du visiteur après un geste sur la réglette qui aboutit à [min, max].
+ * Un geste qui ne déplace rien (clic, mouvement vertical) garde le choix
+ * courant ; une fenêtre couvrant toutes les données vaut « Tout ».
+ */
+export function nextView(xVals, view, min, max) {
+	const current = viewWindow(xVals, view)
+	if (current.min === min && current.max === max) return view
+	const lo = xVals[0]
+	const hi = xVals[xVals.length - 1]
+	if (min <= lo && max >= hi) return { hours: null }
+	return { min, max, atEnd: max >= hi }
+}
+
 export function useDateRange(startDate, endDate) {
 	const startMs = useMemo(() => {
 		if (startDate) return new Date(startDate).getTime()
@@ -145,14 +177,23 @@ export function useChart({ plotData, hours, color, buildChartOpts, formatTooltip
 	const onScaleChangeRef = useRef(onScaleChange)
 	onScaleChangeRef.current = onScaleChange
 	const reentryGuardRef = useRef(false)
+	// Fenêtre choisie par le visiteur, relue à chaque reconstruction : sans elle,
+	// chaque rafraîchissement ramènerait la vue à `hours`.
+	const viewRef = useRef({ hours })
+	// Seul point d'écriture de la vue : le bouton allumé en découle, aucun pour
+	// une période réglée à la réglette.
+	const setView = useCallback(view => {
+		viewRef.current = view
+		setActiveHours(view.hours)
+	}, [])
 
 	useEffect(() => {
 		if (!chartRef.current || !rangerRef.current || !plotData || !plotData[0].length) return
 
 		const xVals = plotData[0]
-		const hoursS = hours * 3600
-		const initMax = xVals[xVals.length - 1]
-		const initMin = initMax - hoursS
+		const { min: initMin, max: initMax } = viewWindow(xVals, viewRef.current)
+
+		const keepManualWindow = (min, max) => setView(nextView(xVals, viewRef.current, min, max))
 
 		// Détruit les instances précédentes (graphe + ranger)
 		if (uPlotRef.current) { uPlotRef.current.destroy(); uPlotRef.current = null }
@@ -286,6 +327,7 @@ export function useChart({ plotData, hours, color, buildChartOpts, formatTooltip
 							const { min, max } = clampWindow(plotData[0], rawMin, rawMax, edge)
 							uPlotRef.current.setScale('x', { min, max })
 							renderRangerSelect(uRanger, min, max)
+							keepManualWindow(min, max)
 						}
 
 						function bindMove(e, onMove) {
@@ -331,6 +373,7 @@ export function useChart({ plotData, hours, color, buildChartOpts, formatTooltip
 						const { min, max } = clampWindow(plotData[0], u.posToVal(left, 'x'), u.posToVal(left + selWidth, 'x'), 'R')
 						uPlotRef.current.setScale('x', { min, max })
 						renderRangerSelect(u, min, max)
+						keepManualWindow(min, max)
 					}
 				]
 			}
@@ -366,17 +409,19 @@ export function useChart({ plotData, hours, color, buildChartOpts, formatTooltip
 			uRangerRef.current = null
 			window.removeEventListener('resize', handleResize)
 		}
-	}, [plotData, color, hours])
+	}, [plotData, color, setView])
 
 	const handleZoom = useCallback((zoomHours) => {
+		setView({ hours: zoomHours })
 		if (!uPlotRef.current || !uRangerRef.current || !plotData) return
-		setActiveHours(zoomHours)
-		const xVals = plotData[0]
-		const max = xVals[xVals.length - 1]
-		const min = zoomHours ? max - zoomHours * 3600 : xVals[0]
+		const { min, max } = viewWindow(plotData[0], viewRef.current)
 		uPlotRef.current.setScale('x', { min, max })
 		renderRangerSelect(uRangerRef.current, min, max)
-	}, [plotData])
+	}, [plotData, setView])
+
+	// `hours` fixe la durée au chargement ; s'il change ensuite, c'est comme un
+	// clic sur le bouton de cette durée.
+	useEffect(() => { handleZoom(hours) }, [hours])
 
 	const handleExportPNG = useCallback(() => {
 		const root = uPlotRef.current?.root

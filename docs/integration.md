@@ -202,6 +202,13 @@ graphique déjà affiché : les dernières données valides restent visibles et 
 le triangle d'alerte signale le problème. L'écran d'erreur plein cadre n'apparaît
 que si le **tout premier** chargement échoue (aucune donnée à afficher).
 
+Un rafraîchissement conserve la période choisie par le visiteur. Une durée
+sélectionnée par bouton (`6h`, `1j`, `Tout`…) reste appliquée et se recale sur
+la dernière mesure. Une période réglée à la main sur la frise reste en place ;
+si elle touchait la fin des données, elle avance avec les nouvelles mesures.
+Aucun bouton de durée n'est alors mis en évidence, sauf si la période couvre
+toute la frise : elle vaut alors `Tout`.
+
 ## Multi-instances
 
 Vous pouvez afficher plusieurs widgets sur la même page :
