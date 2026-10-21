@@ -18,7 +18,7 @@ import {
 } from '../lib/threshold-categories.js'
 import { useChart, useDateRange, useAutoRefresh, xAxisConfig } from '../lib/hooks/use-chart.js'
 import { hydroTooltipRows, renderTooltip } from '../lib/tooltip.js'
-import { CHART_HEIGHT, axisStroke } from '../lib/theme.js'
+import { axisStroke } from '../lib/theme.js'
 import { refreshStart, refreshSuccess, refreshFailure } from '../lib/refresh-state.js'
 import ChartControls from './chart-controls.jsx'
 import Legend from './legend.jsx'
@@ -27,7 +27,7 @@ import { LoadingState, ErrorState, EmptyState } from './chart-states.jsx'
 import './chart.css'
 import './hydro-chart.css'
 
-const HydroChart = ({ config }) => {
+const HydroChart = ({ config, fitHeight = false }) => {
 	const [state, setState] = useState({ loading: true, error: null, refreshing: false, refreshError: null, measures: null, thresholds: [], stationInfo: null })
 	const [seriesVisibility, setSeriesVisibility] = useState(new Map())
 
@@ -164,13 +164,12 @@ const HydroChart = ({ config }) => {
 		})
 	, [displayThresholds, seriesVisibility, defaultKeys])
 
-	const { chartRef, rangerRef, uPlotRef, activeHours, handleZoom, handleExportPNG } = useChart({
+	const { widgetRef, chartRef, rangerRef, uPlotRef, activeHours, handleZoom, handleExportPNG } = useChart({
 		plotData,
 		hours,
 		color,
 		buildChartOpts: (chartWidth, initMin, initMax) => ({
 			width: chartWidth,
-			height: CHART_HEIGHT,
 			scales: {
 				x: { time: true, min: initMin, max: initMax },
 				y: { auto: true }
@@ -211,7 +210,8 @@ const HydroChart = ({ config }) => {
 				defaultKeys
 			}))
 		},
-		exportPrefix: buildExportName('hydro', state.stationInfo?.name, state.stationInfo?.code ?? idStation)
+		exportPrefix: buildExportName('hydro', state.stationInfo?.name, state.stationInfo?.code ?? idStation),
+		fitHeight
 	})
 
 	// Aligne l'instance uPlot sur l'état Preact, pour les changements de
@@ -220,7 +220,7 @@ const HydroChart = ({ config }) => {
 	// Deux chemins écrivent `show` sur l'instance, et il faut les garder
 	// cohérents :
 	//  1. la (re)construction, où useChart relit `thresholdsSeries` via le ref
-	//     buildChartOpts — mais son effet ne dépend que de [plotData, color, hours] ;
+	//     buildChartOpts — mais son effet ne dépend pas de la visibilité des seuils ;
 	//  2. cet effet, pour tout le reste — un seuil masqué ne change pas plotData,
 	//     donc rien ne serait redessiné sans lui.
 	//
@@ -281,10 +281,9 @@ const HydroChart = ({ config }) => {
 	}
 
 	return (
-		<div className="acycliq-hydro">
+		<div className="acycliq-hydro" ref={widgetRef}>
 			{/* Nom de station, dernière valeur et date d'acquisition sur une seule
-			    ligne : l'iframe ne dispose que d'une centaine de pixels hors canevas,
-			    chaque ligne gagnée compte. */}
+			    ligne : chaque ligne gagnée est rendue au graphique. */}
 			<div className="acycliq-headline">
 				{state.stationInfo?.name && (
 					<span className="station-name">{state.stationInfo.name}</span>

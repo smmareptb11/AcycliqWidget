@@ -3,9 +3,8 @@ import UPlot from 'uplot'
 import { dayMonthFormatter, hourMinuteFormatter, monthYearFormatter } from '../util/date.js'
 import { downloadCanvasPng } from '../util/download.js'
 import { placeTooltip } from '../tooltip.js'
-import { CHART_HEIGHT, axisStroke, RANGER_FILL_ALPHA } from '../theme.js'
+import { CHART_HEIGHT, MIN_CHART_HEIGHT, axisStroke, RANGER_FILL_ALPHA } from '../theme.js'
 
-const DEFAULT_CHART_HEIGHT = CHART_HEIGHT
 const DEFAULT_RANGER_HEIGHT = 28
 const RANGER_OFFSET = 100
 const MIN_WINDOW_S = 3600 // fenêtre temporelle minimale sélectionnable : 1h
@@ -87,6 +86,21 @@ export function clampWindow(xVals, min, max, edge) {
 	return { min, max }
 }
 
+/**
+ * Hauteur du canevas pour que le widget remplisse exactement la fenêtre (px) :
+ * ce que laisse le reste du widget, sans descendre sous le plancher. Arrondie à
+ * l'inférieur pour ne jamais faire apparaître de barre de défilement pour une
+ * fraction de pixel : les hauteurs mesurées doivent donc être fractionnaires
+ * (getBoundingClientRect), et non arrondies comme `offsetHeight`.
+ *
+ * @param {number} viewportHeight - hauteur de la fenêtre (de l'iframe)
+ * @param {number} otherHeight - hauteur du widget hors canevas (en-tête,
+ *   boutons, frise, légende)
+ */
+export function fittedChartHeight(viewportHeight, otherHeight) {
+	return Math.max(MIN_CHART_HEIGHT, Math.floor(viewportHeight - otherHeight))
+}
+
 export function useDateRange(startDate, endDate) {
 	const startMs = useMemo(() => {
 		if (startDate) return new Date(startDate).getTime()
@@ -123,13 +137,16 @@ export function useAutoRefresh(loadData, refreshMinutes) {
  * @param {Array} opts.plotData - tableaux de données uPlot [xVals, yVals, ...]
  * @param {number} opts.hours - fenêtre visible initiale en heures
  * @param {string} opts.color - couleur de la série principale (utilisée pour le ranger)
- * @param {Function} opts.buildChartOpts - (chartWidth, initMin, initMax) => { width, height, scales, axes, series }
+ * @param {Function} opts.buildChartOpts - (chartWidth, initMin, initMax) => { width, scales, axes, series } ; la hauteur est fixée par le hook
  * @param {Function} opts.formatTooltip - (uPlot, idx) => chaîne HTML ou null
  * @param {string} opts.exportPrefix - préfixe de nom de fichier pour l'export PNG
  * @param {Function} [opts.onChartReady] - appelé avec l'instance uPlot après création
  * @param {Function} [opts.onScaleChange] - (u, min, max) appelé à chaque changement d'échelle x (init, zoom, drag du ranger)
+ * @param {boolean} [opts.fitHeight] - le canevas remplit la hauteur de la fenêtre (iframe) au lieu de CHART_HEIGHT ;
+ *   le composant doit alors poser `widgetRef` sur l'élément racine du widget
  */
-export function useChart({ plotData, hours, color, buildChartOpts, formatTooltip, exportPrefix, onChartReady, onScaleChange }) {
+export function useChart({ plotData, hours, color, buildChartOpts, formatTooltip, exportPrefix, onChartReady, onScaleChange, fitHeight = false }) {
+	const widgetRef = useRef(null)
 	const chartRef = useRef(null)
 	const rangerRef = useRef(null)
 	const uPlotRef = useRef(null)
@@ -158,12 +175,26 @@ export function useChart({ plotData, hours, color, buildChartOpts, formatTooltip
 		if (uPlotRef.current) { uPlotRef.current.destroy(); uPlotRef.current = null }
 		if (uRangerRef.current) { uRangerRef.current.destroy(); uRangerRef.current = null }
 
+		// `measureOther` donne la hauteur du widget hors canevas ; il n'est appelé
+		// qu'en mode ajusté, pour ne pas forcer de mise en page inutile.
+		const heightFor = measureOther => (fitHeight && widgetRef.current
+			? fittedChartHeight(window.innerHeight, measureOther())
+			: CHART_HEIGHT)
+
+		// Le graphique doit naître à sa hauteur : né plus haut, il ferait apparaître
+		// une barre de défilement qui, en rétrécissant la largeur, peut faire
+		// passer la légende sur deux lignes et ne plus laisser de place pour la
+		// retirer. Graphique et frise étant détruits, le widget ne mesure ici que
+		// le reste, auquel la frise va s'ajouter. Hauteur lue avant measureWidth,
+		// qui invalide la mise en page.
+		const chartHeight = heightFor(() => widgetRef.current.getBoundingClientRect().height + DEFAULT_RANGER_HEIGHT)
 		const chartWidth = measureWidth(chartRef.current)
 
 		// Construit les options spécifiques au graphe, puis fusionne la config partagée
 		const specificOpts = buildOptsRef.current(chartWidth, initMin, initMax)
 		const opts = {
 			...specificOpts,
+			height: chartHeight,
 			cursor: { drag: { setScale: false, setSelect: false }, bind: { dblclick: () => null } },
 			select: { show: false },
 			legend: { show: false },
@@ -338,25 +369,35 @@ export function useChart({ plotData, hours, color, buildChartOpts, formatTooltip
 
 		uRangerRef.current = new UPlot(rangerOpts, [plotData[0], plotData[1]], rangerRef.current)
 
-		// Recale à la largeur du conteneur. Se déclenche aussi quand le conteneur
-		// change de taille sans resize de fenêtre (iframe, rotation, layout tardif sur mobile).
+		// Recale à la largeur du conteneur, et à la hauteur de la fenêtre avec
+		// `fitHeight`. Se déclenche aussi quand le conteneur change de taille sans
+		// resize de fenêtre (iframe, rotation, layout tardif sur mobile, légende ou
+		// en-tête qui passent sur une ligne de plus).
 		const handleResize = () => {
-			if (!chartRef.current || !uPlotRef.current) return
+			const u = uPlotRef.current
+			if (!chartRef.current || !u) return
+			// Hauteurs lues avant measureWidth, qui invalide la mise en page. Celle
+			// du graphique est lue dans la page plutôt que dans `u.height` : uPlot
+			// applique ses dimensions au DOM en différé.
+			const h = heightFor(() => widgetRef.current.getBoundingClientRect().height - chartRef.current.getBoundingClientRect().height)
 			// Réduit le canevas du ranger aussi, sinon il maintient l'ancêtre
 			// commun large et la mesure reste bloquée sur l'ancienne largeur.
 			const w = measureWidth(chartRef.current, uRangerRef.current?.root)
 			if (w <= 0) return
-			uPlotRef.current.setSize({ width: w, height: DEFAULT_CHART_HEIGHT })
+			if (w === u.width && h === u.height) return
+			u.setSize({ width: w, height: h })
 			uRangerRef.current?.setSize({ width: w - RANGER_OFFSET, height: DEFAULT_RANGER_HEIGHT })
 			// Réaligne la fenêtre du ranger sur l'échelle x courante (les positions en px changent avec la largeur)
-			const xScale = uPlotRef.current.scales.x
+			const xScale = u.scales.x
 			if (uRangerRef.current && xScale?.min != null && xScale?.max != null) {
 				renderRangerSelect(uRangerRef.current, xScale.min, xScale.max)
 			}
 		}
 		window.addEventListener('resize', handleResize)
 		const resizeObserver = new ResizeObserver(handleResize)
-		resizeObserver.observe(chartRef.current)
+		// Le widget contient le graphique : l'observer suffit à suivre aussi la
+		// légende et l'en-tête qui changent de hauteur.
+		resizeObserver.observe(fitHeight && widgetRef.current ? widgetRef.current : chartRef.current)
 
 		return () => {
 			resizeObserver.disconnect()
@@ -366,7 +407,7 @@ export function useChart({ plotData, hours, color, buildChartOpts, formatTooltip
 			uRangerRef.current = null
 			window.removeEventListener('resize', handleResize)
 		}
-	}, [plotData, color, hours])
+	}, [plotData, color, hours, fitHeight])
 
 	const handleZoom = useCallback((zoomHours) => {
 		if (!uPlotRef.current || !uRangerRef.current || !plotData) return
@@ -386,7 +427,7 @@ export function useChart({ plotData, hours, color, buildChartOpts, formatTooltip
 		downloadCanvasPng(root.querySelector('canvas'), `acycliq-${exportPrefix}.png`, background || undefined)
 	}, [exportPrefix])
 
-	return { chartRef, rangerRef, uPlotRef, activeHours, handleZoom, handleExportPNG }
+	return { widgetRef, chartRef, rangerRef, uPlotRef, activeHours, handleZoom, handleExportPNG }
 }
 
 export function xAxisConfig() {

@@ -17,7 +17,7 @@ Développé pour le [SMMAR](https://www.smmar.fr) (Syndicat Mixte des Milieux Aq
 - **Widget Hydrométrique** : visualisation des hauteurs d'eau (m / m NGF) et débits (m³/s) avec seuils d'alerte, filtrables par catégorie (situation, informatif, contrôle)
 - **Widget Pluviométrique** : visualisation des cumuls pluviométriques avec courbe cumulative optionnelle
 - **Interactif** : zoom temporel (1h à 24h), frise chronologique avec sélection par glisser, export PNG
-- **Embarquable** : intégration simple via une balise `<script>`, compatible avec tout site web
+- **Embarquable** : intégration simple via une balise `<script>`, compatible avec tout site web ; le graphique s'ajuste à la hauteur du conteneur, sans barre de défilement tant que celui-ci laisse au graphique sa hauteur minimale
 - **Temps réel** : rafraîchissement automatique configurable, avec indicateur d'état (spinner / triangle d'alerte cliquable) et conservation du graphique en cas d'échec transitoire
 
 ## Démarrage rapide
