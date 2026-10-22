@@ -178,6 +178,25 @@ automatique à l'autre.
 
 > Le nom de la station est affiché en titre au-dessus du graphique (récupéré via l'API).
 
+Les barres de pluie suivent les conventions du hyétogramme : un pas régulier,
+une barre par période, des barres jointives. Chaque barre part du début de sa
+période, comme l'API date ses cumuls, et la légende indique la durée d'une
+barre (« Cumul pluvio / 5 min », « / 1h », « / jour »).
+
+- Avec `'all'`, les mesures sont regroupées au pas habituel de la station
+  (l'écart médian entre deux mesures, 5 min par exemple) : une mesure
+  appartient à la période qui commence à son instant, et une mesure arrivée
+  entre deux pas s'ajoute au cumul de sa période. Les périodes sont calées sur
+  le rythme des mesures : des relevés à la demie ou à 6 h du matin restent à
+  leur heure.
+- Avec `'SUM_HOUR'`, la barre couvre l'heure qui commence à l'instant du cumul.
+- Avec `'SUM_DAY'`, la barre couvre la journée calendaire à Paris, de minuit à
+  minuit ; l'API date ce cumul de midi.
+
+La dernière barre reste entière dans la vue, jusqu'à l'instant présent si sa
+période est en cours. L'échelle et le cumul fenêtré comptent toutes les barres
+visibles, y compris celle commencée avant la vue.
+
 ## Export du graphique en image
 
 Chaque graphique dispose d'un bouton permettant de télécharger l'image du graphique tel qu'il est affiché (fenêtre temporelle et seuils
