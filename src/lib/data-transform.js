@@ -83,15 +83,16 @@ export function applyThresholdsNgf(thresholds, altitude, applyNgf) {
 }
 
 /**
- * Libellé de la série de barres de pluie, reflétant l'agrégation choisie :
- * une somme journalière (`SUM_DAY`) cumule sur une journée, les autres modes
- * restent horaires.
+ * Libellé de la série de barres de pluie, d'après la période que couvre une
+ * barre : les mesures brutes d'une station peuvent arriver toutes les 5 min.
  *
- * @param {string} groupFunc - 'all' | 'SUM_HOUR' | 'SUM_DAY'
+ * @param {number} step - durée d'une période (s)
  * @returns {string}
  */
-export function pluvioBarLabel(groupFunc) {
-	return groupFunc === 'SUM_DAY' ? 'Cumul pluvio / jour' : 'Cumul pluvio / 1h'
+export function pluvioBarLabel(step) {
+	if (step % 86400 === 0) return step === 86400 ? 'Cumul pluvio / jour' : `Cumul pluvio / ${step / 86400} jours`
+	if (step % 3600 === 0) return `Cumul pluvio / ${step / 3600}h`
+	return `Cumul pluvio / ${Math.round(step / 60)} min`
 }
 
 export function buildPluvioPlotData(measures) {

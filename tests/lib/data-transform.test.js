@@ -166,13 +166,16 @@ describe('applyThresholdsNgf', () => {
 })
 
 describe('pluvioBarLabel', () => {
-	it('labels daily aggregation "/ jour"', () => {
-		expect(pluvioBarLabel('SUM_DAY')).toBe('Cumul pluvio / jour')
+	it('nomme la journée pour un cumul journalier', () => {
+		expect(pluvioBarLabel(86400)).toBe('Cumul pluvio / jour')
 	})
 
-	it('labels hourly and raw aggregation "/ 1h"', () => {
-		expect(pluvioBarLabel('SUM_HOUR')).toBe('Cumul pluvio / 1h')
-		expect(pluvioBarLabel('all')).toBe('Cumul pluvio / 1h')
+	it('donne les heures pour un pas horaire', () => {
+		expect(pluvioBarLabel(3600)).toBe('Cumul pluvio / 1h')
+	})
+
+	it('donne les minutes pour des mesures brutes à 5 min', () => {
+		expect(pluvioBarLabel(300)).toBe('Cumul pluvio / 5 min')
 	})
 })
 

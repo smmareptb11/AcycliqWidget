@@ -4,6 +4,7 @@ import 'uplot/dist/uPlot.min.css'
 import { buildExportName } from '../lib/util/download.js'
 import { fetchPluvioStation, fetchPluvioMeasures } from '../lib/api.js'
 import { buildPluvioPlotData, computeWindowedCumul, pluvioBarLabel } from '../lib/data-transform.js'
+import { rainPeriods, withLastPeriodEnd, firstOverlappingStart } from '../lib/rain-bars.js'
 import { useChart, useDateRange, useAutoRefresh, xAxisConfig } from '../lib/hooks/use-chart.js'
 import { renderTooltip } from '../lib/tooltip.js'
 import { CHART_HEIGHT, FILL_ALPHA_SUFFIX, axisStroke } from '../lib/theme.js'
@@ -14,7 +15,10 @@ import { LoadingState, ErrorState, EmptyState } from './chart-states.jsx'
 import './chart.css'
 import './pluvio-chart.css'
 
-const barSize = UPlot.paths.bars({ size: [0.8], align: 1 })
+// Chaque barre part de son instant, début de sa période, et les barres sont
+// jointives : uPlot leur donne la largeur du plus petit écart entre deux
+// instants, qui est le pas une fois la pluie ramenée au pas régulier.
+const barSize = UPlot.paths.bars({ size: [1], align: 1 })
 
 /**
  * Fonction de plage (range) pour les échelles uPlot qui doivent toujours démarrer
@@ -54,10 +58,6 @@ const PluvioChart = ({ config }) => {
 	const [state, setState] = useState({ loading: true, error: null, refreshing: false, refreshError: null, measures: null, stationInfo: null })
 
 	const { apiUrl, token, idStation, color = '#0284C7', colorCumul = '#EA580C', hours = 3, cumul = true, groupFunc = 'all', refresh = 5, startDate, endDate } = config
-
-	// SUM_DAY agrège la pluie par jour ; les autres modes gardent la cadence
-	// horaire. Le libellé des barres doit refléter l'agrégation choisie.
-	const barLabel = pluvioBarLabel(groupFunc)
 
 	const { startMs, getEndMs } = useDateRange(startDate, endDate)
 
@@ -101,22 +101,27 @@ const PluvioChart = ({ config }) => {
 
 	useAutoRefresh(loadData, refresh)
 
-	const plotData = useMemo(() => {
-		const base = buildPluvioPlotData(state.measures)
-		if (!base) return null
-		if (!cumul) return base
+	const { plotData, step } = useMemo(() => {
+		const measures = buildPluvioPlotData(state.measures)
+		if (!measures) return { plotData: null, step: null }
+		const { data, step } = rainPeriods(measures, groupFunc)
 		// Emplacement réservé pour la série de cumul ; rempli dynamiquement par
 		// onScaleChange selon la plage x actuellement visible.
-		return [base[0], base[1], new Array(base[0].length).fill(null)]
-	}, [state.measures, cumul])
+		const columns = cumul ? [data[0], data[1], new Array(data[0].length).fill(null)] : data
+		return { plotData: withLastPeriodEnd(columns, step, Date.now() / 1000), step }
+	}, [state.measures, cumul, groupFunc])
+
+	const barLabel = pluvioBarLabel(step ?? 3600)
 
 	const handleScaleChange = useCallback((u, minX, maxX) => {
 		// Les deux échelles doivent être redérivées de la fenêtre visible :
 		// sinon l'auto-ranging d'uPlot les laisserait bloquées sur des valeurs
-		// héritées d'un zoom précédent (plus large).
-		recomputeYScale(u, minX, maxX)
-		if (cumul) recomputeCumulScale(u, minX, maxX)
-	}, [cumul])
+		// héritées d'un zoom précédent (plus large). Elles comptent toutes les
+		// barres visibles, y compris celle commencée avant la vue.
+		const from = firstOverlappingStart(minX, step)
+		recomputeYScale(u, from, maxX)
+		if (cumul) recomputeCumulScale(u, from, maxX)
+	}, [cumul, step])
 
 	const { chartRef, rangerRef, activeHours, handleZoom, handleExportPNG } = useChart({
 		plotData,
