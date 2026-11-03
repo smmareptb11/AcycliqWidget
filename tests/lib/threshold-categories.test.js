@@ -137,7 +137,13 @@ describe('thresholdKey', () => {
 	})
 
 	it('gère un seuil sans id', () => {
-		expect(thresholdKey({ name: 'Crise' }, 0)).toBe('na:0:Crise')
+		expect(thresholdKey({ name: 'Crise' }, 0)).toBe('na::0:Crise')
+	})
+
+	it('distingue un seuil de hauteur de son homologue de débit', () => {
+		const hauteur = { id: 1, name: 'Vigilance', dataType: 4 }
+		const debit = { id: 1, name: 'Vigilance', dataType: '5' }
+		expect(thresholdKey(hauteur, 0)).not.toBe(thresholdKey(debit, 0))
 	})
 })
 

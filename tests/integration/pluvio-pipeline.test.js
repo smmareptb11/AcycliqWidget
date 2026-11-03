@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { validatePluvioConfig, applyPluvioDefaults } from '../../src/lib/config.js'
 import { buildPluvioPlotData, computeWindowedCumul } from '../../src/lib/data-transform.js'
+import { rainPeriods } from '../../src/lib/rain-bars.js'
 
 // Mesures pluvio réalistes : 13 mars 2026, 1 mesure par heure, 06:00–11:00 UTC
 const measuresResponse = [
@@ -58,6 +59,16 @@ describe('pluvio pipeline: config → transform → données uPlot', () => {
 		const zoomed = computeWindowedCumul(xVals, yVals, 1773576000, 1773583200)
 		expect(zoomed.cumul).toEqual([null, null, 0.0, 0.0, 3.8, null])
 		expect(zoomed.max).toBe(3.8)
+	})
+
+	it('regrouper les mesures au pas régulier ne change pas le cumul total', () => {
+		// Mesure intermédiaire à 10:05, ajoutée au cumul de la période 10:00–11:00.
+		const withIntermediate = [...measuresResponse, [1773583500000, 1.1]]
+		const { data: [xVals, yVals] } = rainPeriods(buildPluvioPlotData(withIntermediate), 'all')
+
+		expect(xVals).toEqual(buildPluvioPlotData(measuresResponse)[0])
+		const total = computeWindowedCumul(xVals, yVals, xVals[0], xVals[xVals.length - 1])
+		expect(total.max).toBeCloseTo(6.0 + 1.1, 2)
 	})
 
 	it('données capteur aberrantes (Infinity/NaN) sont remplacées par null', () => {

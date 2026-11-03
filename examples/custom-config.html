@@ -261,7 +261,7 @@
         <input type="number" name="idStation" min="1" value="17" />
       </label>
       <label id="data-type-section">
-        Type de données
+        Donnée au chargement
         <select name="dataType">
           <option value="4">Hauteur (m)</option>
           <option value="5">Débit (m³/s)</option>
@@ -287,8 +287,22 @@
 
     <div class="section" id="hydro-options">
       <label>
-        Conversion NGF
+        Bascule hauteur / débit
+        <select name="dataTypeToggle">
+          <option value="false">Non</option>
+          <option value="true">Oui</option>
+        </select>
+      </label>
+      <label>
+        Unité au chargement
         <select name="ngf">
+          <option value="true">m NGF</option>
+          <option value="false">m</option>
+        </select>
+      </label>
+      <label>
+        Sélecteur d'unité
+        <select name="unitSelector">
           <option value="true">Oui</option>
           <option value="false">Non</option>
         </select>
@@ -420,7 +434,9 @@
 
       if (type === 'hydro') {
         config.dataType = parseInt(data.get('dataType'), 10);
+        config.dataTypeToggle = data.get('dataTypeToggle') === 'true';
         config.ngf = data.get('ngf') === 'true';
+        config.unitSelector = data.get('unitSelector') === 'true';
         config.threshold = data.get('threshold') === 'true';
         config.thresholdCategories = data.getAll('thresholdCategories');
         // Une catégorie active mais non proposée fait échouer la validation du
@@ -460,7 +476,9 @@
       if (embedConfig.refresh === 5) delete embedConfig.refresh;
       if (type === 'hydro') {
         if (embedConfig.dataType === 4) delete embedConfig.dataType;
+        if (embedConfig.dataTypeToggle === false) delete embedConfig.dataTypeToggle;
         if (embedConfig.ngf === true) delete embedConfig.ngf;
+        if (embedConfig.unitSelector === true) delete embedConfig.unitSelector;
         if (embedConfig.threshold === true) delete embedConfig.threshold;
         // Les catégories sont des tableaux : l'omission compare le contenu, pas
         // une simple égalité de scalaire comme pour les options ci-dessus.

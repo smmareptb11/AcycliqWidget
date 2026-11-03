@@ -5,8 +5,10 @@ const HYDRO_DEFAULTS = {
 	height: '100%',
 	color: '#0284C7',
 	dataType: 4,
+	dataTypeToggle: false,
 	hours: 3,
 	ngf: true,
+	unitSelector: true,
 	threshold: true,
 	// Toutes les catégories sont proposées, et toutes sont actives au
 	// chargement : c'est ce qui préserve le comportement historique de
@@ -72,12 +74,20 @@ export function validateHydroConfig(config) {
 		errors.push('"dataType" doit être 4 (hauteur) ou 5 (débit).')
 	}
 
+	if (config.dataTypeToggle !== undefined && typeof config.dataTypeToggle !== 'boolean') {
+		errors.push('"dataTypeToggle" doit être un booléen.')
+	}
+
 	if (config.hours !== undefined && (typeof config.hours !== 'number' || config.hours < 1)) {
 		errors.push('"hours" doit être un nombre positif.')
 	}
 
 	if (config.refresh !== undefined && (typeof config.refresh !== 'number' || config.refresh < 1)) {
 		errors.push('"refresh" doit être un nombre positif (en minutes).')
+	}
+
+	if (config.unitSelector !== undefined && typeof config.unitSelector !== 'boolean') {
+		errors.push('"unitSelector" doit être un booléen.')
 	}
 
 	const categoriesOk = validateCategoryOption(config.thresholdCategories, 'thresholdCategories', errors)

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { clampWindow, renderRangerSelect } from '../../src/lib/hooks/use-chart.js'
+import { clampWindow, renderRangerSelect, viewWindow, nextView } from '../../src/lib/hooks/use-chart.js'
 
 const MIN_WINDOW_S = 3600 // 1h
 const xVals = [0, 100000] // étendue des données : lo=0, hi=100000 s
@@ -99,5 +99,56 @@ describe('renderRangerSelect — largeur minimale de la sélection (1h reste vis
 		renderRangerSelect(r, 90000, 90100)
 		expect(r.last.width).toBe(16)
 		expect(r.last.left).toBe(0)
+	})
+})
+
+// Le début des données est fixe pendant la vie du widget : un rafraîchissement
+// n'ajoute des mesures qu'à la fin. `grown` est l'étendue après rafraîchissement.
+const grown = [0, 110000]
+
+describe('viewWindow — fenêtre rétablie quand le graphe se reconstruit', () => {
+	it('une durée choisie se recale sur la nouvelle dernière mesure', () => {
+		expect(viewWindow(grown, { hours: 3 })).toEqual({ min: 110000 - 3 * 3600, max: 110000 })
+	})
+
+	it('une durée plus longue que les données commence avant elles, comme au premier rendu', () => {
+		expect(viewWindow([0, 3600], { hours: 24 })).toEqual({ min: 3600 - 24 * 3600, max: 3600 })
+	})
+
+	it('« Tout » couvre la nouvelle étendue des données', () => {
+		expect(viewWindow(grown, { hours: null })).toEqual({ min: 0, max: 110000 })
+	})
+
+	it('une période réglée à la main loin de la fin garde ses bornes quand les données avancent', () => {
+		expect(viewWindow(grown, { min: 20000, max: 40000, atEnd: false })).toEqual({ min: 20000, max: 40000 })
+	})
+
+	it('une période réglée à la main collée à la fin suit les nouvelles mesures', () => {
+		expect(viewWindow(grown, { min: 90000, max: 100000, atEnd: true })).toEqual({ min: 100000, max: 110000 })
+	})
+
+	it('une période collée à la fin plus longue que les données se comporte comme une durée', () => {
+		expect(viewWindow([0, 5000], { min: -5000, max: 5000, atEnd: true })).toEqual({ min: -5000, max: 5000 })
+	})
+})
+
+describe('nextView — choix du visiteur après un geste sur la réglette', () => {
+	it('un geste qui ne déplace pas la fenêtre garde le choix courant', () => {
+		const view = { hours: 3 }
+		expect(nextView(xVals, view, 100000 - 3 * 3600, 100000)).toBe(view)
+	})
+
+	it('une fenêtre déplacée devient une période réglée à la main', () => {
+		expect(nextView(xVals, { hours: 3 }, 20000, 40000)).toEqual({ min: 20000, max: 40000, atEnd: false })
+	})
+
+	it('une période qui atteint la fin des données est marquée pour suivre les nouvelles mesures', () => {
+		expect(nextView(xVals, { hours: 3 }, 80000, 100000)).toEqual({ min: 80000, max: 100000, atEnd: true })
+	})
+
+	it('une période couvrant toutes les données revient à « Tout »', () => {
+		// Sinon un tremblement sur « Tout » la figerait en durée fixe, qui
+		// perdrait le début des données à chaque rafraîchissement.
+		expect(nextView(xVals, { min: 20000, max: 40000 }, 0, 100000)).toEqual({ hours: null })
 	})
 })

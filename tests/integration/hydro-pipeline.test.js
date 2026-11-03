@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { validateHydroConfig, applyHydroDefaults } from '../../src/lib/config.js'
-import { buildHydroPlotData, applyThresholdsNgf, THRESHOLD_SERIES_OFFSET } from '../../src/lib/data-transform.js'
+import { buildHydroPlotData, applyThresholdsNgf, thresholdsOfDataType, THRESHOLD_SERIES_OFFSET } from '../../src/lib/data-transform.js'
+import { shouldApplyNgf } from '../../src/lib/ngf.js'
 import {
 	normalizeCategoryKeys,
 	filterByCategories,
@@ -9,6 +10,8 @@ import {
 	groupByCategory,
 	groupVisibilityState,
 	seriesStyleOf,
+	thresholdsSignature,
+	ALL_CATEGORY_KEYS,
 	GROUP_ACTIVE,
 	GROUP_INACTIVE,
 	GROUP_PARTIAL
@@ -77,7 +80,7 @@ describe('hydro pipeline: config → transform → données uPlot', () => {
 		const config = applyHydroDefaults(userConfig)
 		const isHeight = config.dataType === 4
 		const altitude = stationResponse.link_altimetrySystems[0].altitude
-		const filteredThresholds = thresholdsResponse.filter(th => String(th.dataType) === String(config.dataType))
+		const filteredThresholds = thresholdsOfDataType(thresholdsResponse, config.dataType)
 
 		const plotData = buildHydroPlotData(measuresResponse, altitude, config.ngf, isHeight, filteredThresholds)
 
@@ -111,7 +114,7 @@ describe('hydro pipeline: config → transform → données uPlot', () => {
 		// Utilise la vraie fonction de production (celle du composant) : une
 		// régression de l'offset des seuils ferait échouer ce test.
 		const filteredThresholds = applyThresholdsNgf(
-			thresholdsResponse.filter(th => String(th.dataType) === String(config.dataType)),
+			thresholdsOfDataType(thresholdsResponse, config.dataType),
 			altitude,
 			applyNgf
 		)
@@ -144,6 +147,15 @@ describe('hydro pipeline: config → transform → données uPlot', () => {
 		expect(plotData[1][0]).toBe(1.234)
 	})
 
+	it('en débit, seuls les seuils de débit sont tracés, sans recalage NGF', () => {
+		// Même réponse de seuils que pour la hauteur : une bascule ne recharge rien.
+		const altitude = stationResponse.link_altimetrySystems[0].altitude
+		const displayThresholds = applyThresholdsNgf(thresholdsOfDataType(thresholdsResponse, 5), altitude, shouldApplyNgf(true, false, altitude))
+
+		expect(displayThresholds.map(th => th.name)).toEqual(['Débit seuil'])
+		expect(displayThresholds[0].value).toBe(50)
+	})
+
 	it('station sans altitude : NGF désactivé automatiquement', () => {
 		const stationSansAltitude = { id: 17, link_altimetrySystems: [] }
 		const altitude = stationSansAltitude.link_altimetrySystems.length > 0
@@ -171,7 +183,7 @@ describe('hydro pipeline : filtrage des seuils par catégorie', () => {
 
 		const displayThresholds = filterByCategories(
 			applyThresholdsNgf(
-				thresholds.filter(th => String(th.dataType) === String(config.dataType)),
+				thresholdsOfDataType(thresholds, config.dataType),
 				altitude,
 				applyNgf
 			),
@@ -255,6 +267,17 @@ describe('hydro pipeline : filtrage des seuils par catégorie', () => {
 		expect(isThresholdVisible(displayThresholds[1], 1, new Map(), defaultKeys)).toBe(false)  // Atteinte du Plateau
 	})
 
+	it('un changement d\'unité garde les seuils masqués par le visiteur', () => {
+		// La visibilité est purgée quand la signature des seuils change : elle ne
+		// doit donc pas dépendre de la valeur, que le passage en NGF décale.
+		const enMetres = pipeline(baseConfig).displayThresholds
+		const enNgf = pipeline({ ...baseConfig, ngf: true }).displayThresholds
+		expect(thresholdsSignature(enNgf)).toBe(thresholdsSignature(enMetres))
+
+		const masque = withVisibility(new Map(), [{ threshold: enMetres[0], index: 0 }], false)
+		expect(isThresholdVisible(enNgf[0], 0, masque, ALL_CATEGORY_KEYS)).toBe(false)
+	})
+
 	it('valide une config restreignant les catégories', () => {
 		const { valid } = validateHydroConfig({
 			...baseConfig,
@@ -267,7 +290,7 @@ describe('hydro pipeline : filtrage des seuils par catégorie', () => {
 })
 
 describe('hydro pipeline: légende groupée par catégorie', () => {
-	const displayed = mixedThresholdsResponse.filter(th => String(th.dataType) === '4')
+	const displayed = thresholdsOfDataType(mixedThresholdsResponse, 4)
 
 	it('produit un groupe par catégorie présente, dans l\'ordre canonique', () => {
 		expect(groupByCategory(displayed).map(g => g.key)).toEqual(['situation', 'informatif', 'controle', 'autre'])

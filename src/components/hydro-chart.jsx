@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useState, useMemo } from 'preact/hooks'
+import { useCallback, useEffect, useState, useMemo, useRef } from 'preact/hooks'
 import 'uplot/dist/uPlot.min.css'
 import { fullDateTimeFormatter } from '../lib/util/date.js'
 import { formaterNombreFr } from '../lib/util/number.js'
 import { buildExportName } from '../lib/util/download.js'
 import { fetchHydroStation, fetchHydroMeasures, fetchHydroThresholds } from '../lib/api.js'
-import { buildHydroPlotData, applyThresholdsNgf, lastMeasuredIndex, THRESHOLD_SERIES_OFFSET } from '../lib/data-transform.js'
-import { shouldApplyNgf } from '../lib/ngf.js'
+import { buildHydroPlotData, applyThresholdsNgf, thresholdsOfDataType, lastMeasuredIndex, THRESHOLD_SERIES_OFFSET } from '../lib/data-transform.js'
+import { shouldApplyNgf, isNgfAvailable } from '../lib/ngf.js'
 import {
 	normalizeCategoryKeys,
 	filterByCategories,
@@ -14,13 +14,14 @@ import {
 	seriesStyleOf,
 	thresholdColor,
 	categoryOptionSignature,
-	thresholdKey
+	thresholdsSignature
 } from '../lib/threshold-categories.js'
 import { useChart, useDateRange, useAutoRefresh, xAxisConfig } from '../lib/hooks/use-chart.js'
 import { hydroTooltipRows, renderTooltip } from '../lib/tooltip.js'
 import { axisStroke } from '../lib/theme.js'
 import { refreshStart, refreshSuccess, refreshFailure } from '../lib/refresh-state.js'
 import ChartControls from './chart-controls.jsx'
+import DataTypeToggle from './data-type-toggle.jsx'
 import Legend from './legend.jsx'
 import RefreshStatus from './refresh-status.jsx'
 import { LoadingState, ErrorState, EmptyState } from './chart-states.jsx'
@@ -28,10 +29,34 @@ import './chart.css'
 import './hydro-chart.css'
 
 const HydroChart = ({ config, fitHeight = false }) => {
-	const [state, setState] = useState({ loading: true, error: null, refreshing: false, refreshError: null, measures: null, thresholds: [], stationInfo: null })
+	const [state, setState] = useState({ loading: true, error: null, metaError: null, refreshing: false, refreshError: null, measures: null, thresholds: [], stationInfo: null })
 	const [seriesVisibility, setSeriesVisibility] = useState(new Map())
 
-	const { apiUrl, token, idStation, color = '#0284C7', dataType = 4, hours = 3, ngf: useNgf = true, threshold: showThresholds = true, thresholdCategories, thresholdCategoriesDefault, refresh = 5, startDate, endDate } = config
+	const { apiUrl, token, idStation, color = '#0284C7', dataType: configDataType = 4, dataTypeToggle = false, hours = 3, ngf: configNgf = true, unitSelector = true, threshold: showThresholds = true, thresholdCategories, thresholdCategoriesDefault, refresh = 5, startDate, endDate } = config
+
+	// `dataType` ne fixe que la donnée au chargement : la bascule permet ensuite
+	// au visiteur d'en changer.
+	const [dataType, setDataType] = useState(configDataType)
+	// Seule la réponse du dernier fetch compte : une réponse plus ancienne peut
+	// concerner une donnée quittée depuis, ou arriver après une plus récente.
+	const lastRequestRef = useRef(0)
+
+	// Une bascule est un premier chargement de l'autre donnée : les mesures en
+	// mémoire ne doivent pas s'afficher sous ses libellés et ses seuils, et une
+	// réponse encore en vol pour l'ancienne donnée est écartée.
+	const changeDataType = useCallback(next => {
+		if (next === dataType) return
+		lastRequestRef.current++
+		setDataType(next)
+		setState(s => ({ ...s, loading: true, error: null, refreshError: null, measures: null }))
+	}, [dataType])
+	useEffect(() => { changeDataType(configDataType) }, [configDataType])
+
+	// `ngf` fixe l'unité au chargement ; le visiteur en change ensuite depuis la
+	// pastille de valeur, sauf si `unitSelector` la fige.
+	const [chosenNgf, setChosenNgf] = useState(configNgf)
+	const useNgf = unitSelector ? chosenNgf : configNgf
+	const handleUnitChange = useCallback(e => setChosenNgf(e.currentTarget.value === 'ngf'), [])
 
 	const isHeight = dataType === 4
 	const unit = isHeight ? 'm' : 'm³/s'
@@ -49,9 +74,11 @@ const HydroChart = ({ config, fitHeight = false }) => {
 	const { startMs, getEndMs } = useDateRange(startDate, endDate)
 
 	// Les métadonnées de station et les seuils sont quasi-immuables et sont
-	// récupérés exactement une fois par combinaison (station, dataType,
-	// showThresholds) — jamais sur l'intervalle de rafraîchissement automatique.
-	// Cela réduit le trafic de rafraîchissement de 3 appels à 1 (mesures seules).
+	// récupérés exactement une fois par combinaison (station, showThresholds) —
+	// jamais sur l'intervalle de rafraîchissement automatique. Cela réduit le
+	// trafic de rafraîchissement de 3 appels à 1 (mesures seules). Les seuils de
+	// hauteur et de débit arrivent ensemble : le tri par dataType se fait au
+	// rendu, pour qu'une bascule ne recharge rien.
 	useEffect(() => {
 		let cancelled = false
 		async function loadMeta() {
@@ -63,20 +90,23 @@ const HydroChart = ({ config, fitHeight = false }) => {
 						: Promise.resolve([])
 				])
 				if (cancelled) return
-				const filteredThresholds = (thresholds || []).filter(th => String(th.dataType) === String(dataType))
-				setState(s => ({ ...s, error: null, stationInfo, thresholds: filteredThresholds }))
+				setState(s => ({ ...s, metaError: null, stationInfo, thresholds }))
 			}
 			catch (err) {
 				if (cancelled) return
-				setState(s => ({ ...s, loading: false, error: err.message }))
+				// Distincte de l'échec des mesures : sans station, aucune donnée n'est
+				// affichable, alors qu'un échec des mesures laisse la bascule utile.
+				setState(s => ({ ...s, metaError: err.message }))
 			}
 		}
 		loadMeta()
 		return () => { cancelled = true }
-	}, [apiUrl, token, idStation, dataType, showThresholds])
+	}, [apiUrl, token, idStation, showThresholds])
 
-	// Les mesures sont la seule partie reconstruite sur l'intervalle de rafraîchissement.
+	// Les mesures sont la seule partie reconstruite sur l'intervalle de
+	// rafraîchissement, et la seule rechargée à une bascule hauteur/débit.
 	const loadMeasures = useCallback(async () => {
+		const request = ++lastRequestRef.current
 		setState(refreshStart)
 		try {
 			const measures = await fetchHydroMeasures(apiUrl, token, {
@@ -87,9 +117,11 @@ const HydroChart = ({ config, fitHeight = false }) => {
 				startDate: startMs,
 				endDate: getEndMs()
 			})
+			if (request !== lastRequestRef.current) return
 			setState(s => refreshSuccess(s, measures))
 		}
 		catch (err) {
+			if (request !== lastRequestRef.current) return
 			setState(s => refreshFailure(s, err.message, Date.now()))
 		}
 	}, [apiUrl, token, idStation, dataType, startMs, getEndMs])
@@ -105,6 +137,7 @@ const HydroChart = ({ config, fitHeight = false }) => {
 	// sur l'altitude, l'en-tête doit donc annoncer « m NGF » comme le fait déjà
 	// l'axe Y et la légende des seuils.
 	const displayUnit = applyNgf ? 'm NGF' : unit
+	const showUnitSelector = unitSelector && isNgfAvailable(isHeight, altitude)
 
 	// Quand le NGF est actif, les seuils doivent être décalés de l'altitude de la
 	// station, tout comme la courbe de mesure — sinon les lignes de seuil et leurs
@@ -116,8 +149,8 @@ const HydroChart = ({ config, fitHeight = false }) => {
 	// plotData ni série uPlot : c'est ce filtre unique qui garantit que les deux
 	// restent alignés index par index.
 	const displayThresholds = useMemo(
-		() => filterByCategories(applyThresholdsNgf(state.thresholds, altitude, applyNgf), availableKeys),
-		[state.thresholds, altitude, applyNgf, availableKeys]
+		() => filterByCategories(applyThresholdsNgf(thresholdsOfDataType(state.thresholds, dataType), altitude, applyNgf), availableKeys),
+		[state.thresholds, dataType, altitude, applyNgf, availableKeys]
 	)
 
 	const plotData = useMemo(
@@ -131,7 +164,7 @@ const HydroChart = ({ config, fitHeight = false }) => {
 	// détruit et recrée l'instance uPlot à chaque rafraîchissement des mesures
 	// (toutes les 5 min par défaut). Accrocher cette réinitialisation à la
 	// construction du graphe rallumerait les seuils masqués à chaque cycle.
-	const thresholdsSignature = displayThresholds.map((th, i) => thresholdKey(th, i)).join('|')
+	const displayedSignature = thresholdsSignature(displayThresholds)
 
 	// Signature des clés normalisées, et non de l'option brute : deux écritures
 	// différentes de la même intention — ordre permuté, doublon, valeur ignorée —
@@ -144,7 +177,7 @@ const HydroChart = ({ config, fitHeight = false }) => {
 	// seul propriétaire de cette règle.
 	useEffect(() => {
 		setSeriesVisibility(new Map())
-	}, [thresholdsSignature, defaultKeysSignature])
+	}, [displayedSignature, defaultKeysSignature])
 
 	const thresholdsSeries = useMemo(() =>
 		displayThresholds.map((th, i) => {
@@ -210,7 +243,7 @@ const HydroChart = ({ config, fitHeight = false }) => {
 				defaultKeys
 			}))
 		},
-		exportPrefix: buildExportName('hydro', state.stationInfo?.name, state.stationInfo?.code ?? idStation),
+		exportPrefix: buildExportName(isHeight ? 'hydro' : 'hydro-debit', state.stationInfo?.name, state.stationInfo?.code ?? idStation),
 		fitHeight
 	})
 
@@ -268,16 +301,25 @@ const HydroChart = ({ config, fitHeight = false }) => {
 	const lastValue = lastIndex > -1 ? plotData[1][lastIndex] : null
 	const lastDate = lastIndex > -1 ? new Date(plotData[0][lastIndex] * 1000) : null
 
+	if (state.metaError) {
+		return <ErrorState message={state.metaError} />
+	}
+
+	let pendingState = null
 	if (state.loading) {
-		return <LoadingState />
+		pendingState = <LoadingState />
+	}
+	else if (state.error) {
+		pendingState = <ErrorState message={state.error} />
+	}
+	else if (!plotData || plotData[0].length === 0) {
+		pendingState = <EmptyState />
 	}
 
-	if (state.error) {
-		return <ErrorState message={state.error} />
-	}
-
-	if (!plotData || plotData[0].length === 0) {
-		return <EmptyState />
+	// Avec la bascule, l'en-tête reste affiché pour que le visiteur puisse
+	// revenir à l'autre donnée, notamment sur un ouvrage sans débit.
+	if (pendingState && !dataTypeToggle) {
+		return pendingState
 	}
 
 	return (
@@ -289,7 +331,28 @@ const HydroChart = ({ config, fitHeight = false }) => {
 					<span className="station-name">{state.stationInfo.name}</span>
 				)}
 				{lastValue != null && (
-					<span className="last-value">{formaterNombreFr(lastValue)} {displayUnit}</span>
+					<span className="last-value">
+						{formaterNombreFr(lastValue)}{' '}
+						{showUnitSelector
+							? (
+								// Un <select> natif prend la largeur de sa plus longue option : il est
+								// posé, transparent, sur le libellé, pour que la pastille garde la
+								// largeur de l'unité affichée.
+								<span className="unit-choice">
+									<span aria-hidden="true">{displayUnit}</span>
+									<select
+										className="unit-select"
+										aria-label="Unité de hauteur"
+										value={applyNgf ? 'ngf' : 'm'}
+										onChange={handleUnitChange}
+									>
+										<option value="m">m</option>
+										<option value="ngf">m NGF</option>
+									</select>
+								</span>
+							)
+							: displayUnit}
+					</span>
 				)}
 				{lastDate && (
 					<span className="last-date">{fullDateTimeFormatter(lastDate)}</span>
@@ -299,24 +362,29 @@ const HydroChart = ({ config, fitHeight = false }) => {
 					refreshError={state.refreshError}
 					onForceRefresh={loadMeasures}
 				/>
+				{dataTypeToggle && <DataTypeToggle value={dataType} onChange={changeDataType} />}
 			</div>
 
-			<ChartControls activeHours={activeHours} onZoom={handleZoom} onExportPNG={handleExportPNG} />
+			{pendingState ?? (
+				<>
+					<ChartControls activeHours={activeHours} onZoom={handleZoom} onExportPNG={handleExportPNG} />
 
-			<div className="chart-wrapper">
-				<div ref={chartRef} />
-				<div ref={rangerRef} className="chart-ranger" />
-			</div>
+					<div className="chart-wrapper">
+						<div ref={chartRef} />
+						<div ref={rangerRef} className="chart-ranger" />
+					</div>
 
-			{showThresholds && (
-				<Legend
-					thresholds={displayThresholds}
-					unit={displayUnit}
-					seriesVisibility={seriesVisibility}
-					defaultKeys={defaultKeys}
-					onToggle={toggleThreshold}
-					onToggleCategory={toggleCategory}
-				/>
+					{showThresholds && (
+						<Legend
+							thresholds={displayThresholds}
+							unit={displayUnit}
+							seriesVisibility={seriesVisibility}
+							defaultKeys={defaultKeys}
+							onToggle={toggleThreshold}
+							onToggleCategory={toggleCategory}
+						/>
+					)}
+				</>
 			)}
 		</div>
 	)
