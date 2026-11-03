@@ -50,6 +50,10 @@
 	white-space: nowrap;
 }
 
+.data-type-toggle {
+	margin-left: auto;
+}
+
 /* Le soulignement pointillé et le chevron signalent qu'on peut changer
    l'unité. */
 .unit-choice {

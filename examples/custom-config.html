@@ -261,7 +261,7 @@
         <input type="number" name="idStation" min="1" value="17" />
       </label>
       <label id="data-type-section">
-        Type de données
+        Donnée au chargement
         <select name="dataType">
           <option value="4">Hauteur (m)</option>
           <option value="5">Débit (m³/s)</option>
@@ -286,6 +286,13 @@
     </div>
 
     <div class="section" id="hydro-options">
+      <label>
+        Bascule hauteur / débit
+        <select name="dataTypeToggle">
+          <option value="false">Non</option>
+          <option value="true">Oui</option>
+        </select>
+      </label>
       <label>
         Unité au chargement
         <select name="ngf">
@@ -427,6 +434,7 @@
 
       if (type === 'hydro') {
         config.dataType = parseInt(data.get('dataType'), 10);
+        config.dataTypeToggle = data.get('dataTypeToggle') === 'true';
         config.ngf = data.get('ngf') === 'true';
         config.unitSelector = data.get('unitSelector') === 'true';
         config.threshold = data.get('threshold') === 'true';
@@ -468,6 +476,7 @@
       if (embedConfig.refresh === 5) delete embedConfig.refresh;
       if (type === 'hydro') {
         if (embedConfig.dataType === 4) delete embedConfig.dataType;
+        if (embedConfig.dataTypeToggle === false) delete embedConfig.dataTypeToggle;
         if (embedConfig.ngf === true) delete embedConfig.ngf;
         if (embedConfig.unitSelector === true) delete embedConfig.unitSelector;
         if (embedConfig.threshold === true) delete embedConfig.threshold;
