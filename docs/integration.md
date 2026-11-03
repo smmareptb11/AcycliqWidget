@@ -77,7 +77,8 @@ npm install acycliq-widget
 | `startDate` | non | string | Now - 30j | Date de début (ISO 8601) |
 | `endDate` | non | string | Now | Date de fin (ISO 8601) |
 | `hours` | non | number | `3` | Amplitude initiale de la fenêtre visible (en heures) |
-| `ngf` | non | boolean | `true` | Conversion en mètres NGF (si altitude disponible) — appliquée aussi aux seuils |
+| `ngf` | non | boolean | `true` | Unité au chargement : mètres NGF (si altitude disponible) ou mètres. La conversion s'applique aussi aux seuils |
+| `unitSelector` | non | boolean | `true` | Permet au visiteur de passer de m à m NGF en cliquant sur l'unité de la dernière valeur. Proposé seulement pour une hauteur dont l'altitude est connue. `false` fige l'unité choisie par `ngf` |
 | `threshold` | non | boolean | `true` | Afficher les seuils de la station |
 | `thresholdCategories` | non | string[] | toutes | Catégories de seuils proposées dans la légende (voir ci-dessous) |
 | `thresholdCategoriesDefault` | non | string[] | toutes | Catégories actives au chargement ; les autres apparaissent grisées |
@@ -155,7 +156,8 @@ repères de crue.
 ```
 
 La visibilité choisie par le visiteur est conservée d'un rafraîchissement
-automatique à l'autre.
+automatique à l'autre, et quand il change d'unité. L'unité qu'il a choisie est
+elle aussi conservée au rafraîchissement.
 
 ## Paramètres — Widget Pluvio
 
@@ -178,6 +180,25 @@ automatique à l'autre.
 | `src` | non | string | auto | URL de l'iframe (auto-détecté par défaut) |
 
 > Le nom de la station est affiché en titre au-dessus du graphique (récupéré via l'API).
+
+Les barres de pluie suivent les conventions du hyétogramme : un pas régulier,
+une barre par période, des barres jointives. Chaque barre part du début de sa
+période, comme l'API date ses cumuls, et la légende indique la durée d'une
+barre (« Cumul pluvio / 5 min », « / 1h », « / jour »).
+
+- Avec `'all'`, les mesures sont regroupées au pas habituel de la station
+  (l'écart médian entre deux mesures, 5 min par exemple) : une mesure
+  appartient à la période qui commence à son instant, et une mesure arrivée
+  entre deux pas s'ajoute au cumul de sa période. Les périodes sont calées sur
+  le rythme des mesures : des relevés à la demie ou à 6 h du matin restent à
+  leur heure.
+- Avec `'SUM_HOUR'`, la barre couvre l'heure qui commence à l'instant du cumul.
+- Avec `'SUM_DAY'`, la barre couvre la journée calendaire à Paris, de minuit à
+  minuit ; l'API date ce cumul de midi.
+
+La dernière barre reste entière dans la vue, jusqu'à l'instant présent si sa
+période est en cours. L'échelle et le cumul fenêtré comptent toutes les barres
+visibles, y compris celle commencée avant la vue.
 
 ## Export du graphique en image
 
@@ -203,6 +224,13 @@ Un échec transitoire (API momentanément indisponible) **ne détruit pas** le
 graphique déjà affiché : les dernières données valides restent visibles et seul
 le triangle d'alerte signale le problème. L'écran d'erreur plein cadre n'apparaît
 que si le **tout premier** chargement échoue (aucune donnée à afficher).
+
+Un rafraîchissement conserve la période choisie par le visiteur. Une durée
+sélectionnée par bouton (`6h`, `1j`, `Tout`…) reste appliquée et se recale sur
+la dernière mesure. Une période réglée à la main sur la frise reste en place ;
+si elle touchait la fin des données, elle avance avec les nouvelles mesures.
+Aucun bouton de durée n'est alors mis en évidence, sauf si la période couvre
+toute la frise : elle vaut alors `Tout`.
 
 ## Multi-instances
 

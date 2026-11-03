@@ -8,6 +8,7 @@ const HYDRO_DEFAULTS = {
 	dataTypeToggle: false,
 	hours: 3,
 	ngf: true,
+	unitSelector: true,
 	threshold: true,
 	// Toutes les catégories sont proposées, et toutes sont actives au
 	// chargement : c'est ce qui préserve le comportement historique de
@@ -83,6 +84,10 @@ export function validateHydroConfig(config) {
 
 	if (config.refresh !== undefined && (typeof config.refresh !== 'number' || config.refresh < 1)) {
 		errors.push('"refresh" doit être un nombre positif (en minutes).')
+	}
+
+	if (config.unitSelector !== undefined && typeof config.unitSelector !== 'boolean') {
+		errors.push('"unitSelector" doit être un booléen.')
 	}
 
 	const categoriesOk = validateCategoryOption(config.thresholdCategories, 'thresholdCategories', errors)
