@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Acycliq Widget — Exemple compact</title>
+	<style>
+		body { font-family: system-ui, sans-serif; margin: 1rem; }
+		.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1rem; }
+		.card { border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.5rem; }
+		.card h2 { margin: 0 0 0.5rem; font-size: 0.9rem; }
+	</style>
+</head>
+<body>
+	<p>
+		Le graphique s'ajuste à la hauteur de son conteneur : les mêmes stations
+		dans des encarts de 280 px et de 600 px de haut, sans barre de défilement.
+		Dans l'encart de 180 px, le graphique atteint sa hauteur minimale et
+		l'iframe défile.
+	</p>
+
+	<div class="grid">
+		<div class="card">
+			<h2>Hydro, 280 px</h2>
+			<div id="hydro-compact" style="height: 280px;"></div>
+		</div>
+		<div class="card">
+			<h2>Pluvio, 280 px</h2>
+			<div id="pluvio-compact" style="height: 280px;"></div>
+		</div>
+		<div class="card">
+			<h2>Hydro, 600 px</h2>
+			<div id="hydro-large" style="height: 600px;"></div>
+		</div>
+		<div class="card">
+			<h2>Hydro, 180 px (sous la hauteur minimale)</h2>
+			<div id="hydro-tiny" style="height: 180px;"></div>
+		</div>
+	</div>
+
+	<script src="https://unpkg.com/acycliq-widget@latest/dist/embed/acycliq-widget.min.js"></script>
+	<script>
+		var common = { apiUrl: 'https://smmar.acycliq.fr/api', token: 'VOTRE_TOKEN_ICI' }
+
+		acycliq.hydro(Object.assign({ container: '#hydro-compact', idStation: 17 }, common))
+		acycliq.pluvio(Object.assign({ container: '#pluvio-compact', idStation: 719 }, common))
+		acycliq.hydro(Object.assign({ container: '#hydro-large', idStation: 17 }, common))
+		acycliq.hydro(Object.assign({ container: '#hydro-tiny', idStation: 17 }, common))
+	</script>
+</body>
+</html>

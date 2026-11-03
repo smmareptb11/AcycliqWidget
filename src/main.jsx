@@ -21,7 +21,7 @@ function renderWidget(config) {
 			)
 			return
 		}
-		render(<PluvioChart config={applyPluvioDefaults(config)} />, app)
+		render(<PluvioChart config={applyPluvioDefaults(config)} fitHeight />, app)
 	}
 	else {
 		const result = validateHydroConfig(config)
@@ -35,7 +35,7 @@ function renderWidget(config) {
 			)
 			return
 		}
-		render(<HydroChart config={applyHydroDefaults(config)} />, app)
+		render(<HydroChart config={applyHydroDefaults(config)} fitHeight />, app)
 	}
 }
 

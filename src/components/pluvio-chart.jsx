@@ -7,7 +7,7 @@ import { buildPluvioPlotData, computeWindowedCumul, pluvioBarLabel } from '../li
 import { rainPeriods, withLastPeriodEnd, firstOverlappingStart } from '../lib/rain-bars.js'
 import { useChart, useDateRange, useAutoRefresh, xAxisConfig } from '../lib/hooks/use-chart.js'
 import { renderTooltip } from '../lib/tooltip.js'
-import { CHART_HEIGHT, FILL_ALPHA_SUFFIX, axisStroke } from '../lib/theme.js'
+import { FILL_ALPHA_SUFFIX, axisStroke } from '../lib/theme.js'
 import { refreshStart, refreshSuccess, refreshFailure } from '../lib/refresh-state.js'
 import ChartControls from './chart-controls.jsx'
 import RefreshStatus from './refresh-status.jsx'
@@ -54,7 +54,7 @@ function recomputeCumulScale(u, minX, maxX) {
 	u.setScale('cumul', { min: 0, max: cMax > 0 ? cMax : 1 })
 }
 
-const PluvioChart = ({ config }) => {
+const PluvioChart = ({ config, fitHeight = false }) => {
 	const [state, setState] = useState({ loading: true, error: null, refreshing: false, refreshError: null, measures: null, stationInfo: null })
 
 	const { apiUrl, token, idStation, color = '#0284C7', colorCumul = '#EA580C', hours = 3, cumul = true, groupFunc = 'all', refresh = 5, startDate, endDate } = config
@@ -123,7 +123,7 @@ const PluvioChart = ({ config }) => {
 		if (cumul) recomputeCumulScale(u, from, maxX)
 	}, [cumul, step])
 
-	const { chartRef, rangerRef, activeHours, handleZoom, handleExportPNG } = useChart({
+	const { widgetRef, chartRef, rangerRef, activeHours, handleZoom, handleExportPNG } = useChart({
 		plotData,
 		hours,
 		color,
@@ -176,7 +176,7 @@ const PluvioChart = ({ config }) => {
 				scales.cumul = { range: nonNegativeAutoRange }
 			}
 
-			return { width: chartWidth, height: CHART_HEIGHT, scales, axes, series }
+			return { width: chartWidth, scales, axes, series }
 		},
 		formatTooltip: (u, idx) => {
 			const xVal = u.data[0][idx]
@@ -192,6 +192,7 @@ const PluvioChart = ({ config }) => {
 			return renderTooltip(xVal, rows)
 		},
 		exportPrefix: buildExportName('pluvio', state.stationInfo?.name, state.stationInfo?.code ?? idStation),
+		fitHeight,
 		onScaleChange: handleScaleChange
 	})
 
@@ -208,7 +209,7 @@ const PluvioChart = ({ config }) => {
 	}
 
 	return (
-		<div className="acycliq-pluvio">
+		<div className="acycliq-pluvio" ref={widgetRef}>
 			{state.stationInfo?.name && (
 				<div className="acycliq-title">
 					{state.stationInfo.name}
