@@ -5,7 +5,7 @@ import { formaterNombreFr } from '../lib/util/number.js'
 import { buildExportName } from '../lib/util/download.js'
 import { fetchHydroStation, fetchHydroMeasures, fetchHydroThresholds } from '../lib/api.js'
 import { buildHydroPlotData, applyThresholdsNgf, lastMeasuredIndex, THRESHOLD_SERIES_OFFSET } from '../lib/data-transform.js'
-import { shouldApplyNgf } from '../lib/ngf.js'
+import { shouldApplyNgf, isNgfAvailable } from '../lib/ngf.js'
 import {
 	normalizeCategoryKeys,
 	filterByCategories,
@@ -14,7 +14,7 @@ import {
 	seriesStyleOf,
 	thresholdColor,
 	categoryOptionSignature,
-	thresholdKey
+	thresholdsSignature
 } from '../lib/threshold-categories.js'
 import { useChart, useDateRange, useAutoRefresh, xAxisConfig } from '../lib/hooks/use-chart.js'
 import { hydroTooltipRows, renderTooltip } from '../lib/tooltip.js'
@@ -31,7 +31,13 @@ const HydroChart = ({ config }) => {
 	const [state, setState] = useState({ loading: true, error: null, refreshing: false, refreshError: null, measures: null, thresholds: [], stationInfo: null })
 	const [seriesVisibility, setSeriesVisibility] = useState(new Map())
 
-	const { apiUrl, token, idStation, color = '#0284C7', dataType = 4, hours = 3, ngf: useNgf = true, threshold: showThresholds = true, thresholdCategories, thresholdCategoriesDefault, refresh = 5, startDate, endDate } = config
+	const { apiUrl, token, idStation, color = '#0284C7', dataType = 4, hours = 3, ngf: configNgf = true, unitSelector = true, threshold: showThresholds = true, thresholdCategories, thresholdCategoriesDefault, refresh = 5, startDate, endDate } = config
+
+	// `ngf` fixe l'unité au chargement ; le visiteur en change ensuite depuis la
+	// pastille de valeur, sauf si `unitSelector` la fige.
+	const [chosenNgf, setChosenNgf] = useState(configNgf)
+	const useNgf = unitSelector ? chosenNgf : configNgf
+	const handleUnitChange = useCallback(e => setChosenNgf(e.currentTarget.value === 'ngf'), [])
 
 	const isHeight = dataType === 4
 	const unit = isHeight ? 'm' : 'm³/s'
@@ -105,6 +111,7 @@ const HydroChart = ({ config }) => {
 	// sur l'altitude, l'en-tête doit donc annoncer « m NGF » comme le fait déjà
 	// l'axe Y et la légende des seuils.
 	const displayUnit = applyNgf ? 'm NGF' : unit
+	const showUnitSelector = unitSelector && isNgfAvailable(isHeight, altitude)
 
 	// Quand le NGF est actif, les seuils doivent être décalés de l'altitude de la
 	// station, tout comme la courbe de mesure — sinon les lignes de seuil et leurs
@@ -131,7 +138,7 @@ const HydroChart = ({ config }) => {
 	// détruit et recrée l'instance uPlot à chaque rafraîchissement des mesures
 	// (toutes les 5 min par défaut). Accrocher cette réinitialisation à la
 	// construction du graphe rallumerait les seuils masqués à chaque cycle.
-	const thresholdsSignature = displayThresholds.map((th, i) => thresholdKey(th, i)).join('|')
+	const displayedSignature = thresholdsSignature(displayThresholds)
 
 	// Signature des clés normalisées, et non de l'option brute : deux écritures
 	// différentes de la même intention — ordre permuté, doublon, valeur ignorée —
@@ -144,7 +151,7 @@ const HydroChart = ({ config }) => {
 	// seul propriétaire de cette règle.
 	useEffect(() => {
 		setSeriesVisibility(new Map())
-	}, [thresholdsSignature, defaultKeysSignature])
+	}, [displayedSignature, defaultKeysSignature])
 
 	const thresholdsSeries = useMemo(() =>
 		displayThresholds.map((th, i) => {
@@ -290,7 +297,28 @@ const HydroChart = ({ config }) => {
 					<span className="station-name">{state.stationInfo.name}</span>
 				)}
 				{lastValue != null && (
-					<span className="last-value">{formaterNombreFr(lastValue)} {displayUnit}</span>
+					<span className="last-value">
+						{formaterNombreFr(lastValue)}{' '}
+						{showUnitSelector
+							? (
+								// Un <select> natif prend la largeur de sa plus longue option : il est
+								// posé, transparent, sur le libellé, pour que la pastille garde la
+								// largeur de l'unité affichée.
+								<span className="unit-choice">
+									<span aria-hidden="true">{displayUnit}</span>
+									<select
+										className="unit-select"
+										aria-label="Unité de hauteur"
+										value={applyNgf ? 'ngf' : 'm'}
+										onChange={handleUnitChange}
+									>
+										<option value="m">m</option>
+										<option value="ngf">m NGF</option>
+									</select>
+								</span>
+							)
+							: displayUnit}
+					</span>
 				)}
 				{lastDate && (
 					<span className="last-date">{fullDateTimeFormatter(lastDate)}</span>

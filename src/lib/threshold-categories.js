@@ -204,6 +204,14 @@ export function thresholdKey(threshold, index) {
 }
 
 /**
+ * Signature d'une liste de seuils affichés : elle ne change que si l'ensemble
+ * des seuils change, pas leurs valeurs (recalage NGF).
+ */
+export function thresholdsSignature(thresholds) {
+	return thresholds.map((th, i) => thresholdKey(th, i)).join('|')
+}
+
+/**
  * Regroupe les seuils par catégorie pour l'affichage, sans jamais réordonner la
  * liste d'origine.
  *
